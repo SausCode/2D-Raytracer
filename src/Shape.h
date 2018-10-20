@@ -1,0 +1,43 @@
+
+#pragma once
+
+#ifndef LAB471_SHAPE_H_INCLUDED
+#define LAB471_SHAPE_H_INCLUDED
+
+#include <string>
+#include <vector>
+#include <memory>
+
+class Program;
+
+class Shape
+{
+    
+public:
+    
+    void loadMesh(const std::string &meshName);
+    void init();
+    void resize();
+    void draw(const std::shared_ptr<Program> prog) const;
+    
+    
+    std::vector<unsigned int> eleBuf;
+    std::vector<float> posBuf;
+    std::vector<float> norBuf;
+    std::vector<float> texBuf;
+    std::vector<float> tanBuf;
+    std::vector<float> binormBuf;
+private:
+    unsigned int eleBufID = 0;
+    unsigned int posBufID = 0;
+    unsigned int norBufID = 0;
+    unsigned int texBufID = 0;
+    unsigned int tanBufID = 0;
+    unsigned int binormBufID = 0;
+    unsigned int vaoID = 0;
+    
+};
+
+void computeTangentSpace(Shape *shape);
+
+#endif // LAB471_SHAPE_H_INCLUDED
