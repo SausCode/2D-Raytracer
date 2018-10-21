@@ -24,26 +24,19 @@
 using namespace std;
 using namespace glm;
 
-
-
-
-
-
 class Application : public EventCallbacks
 {
 
 public:
-    
+ 
 	WindowManager * windowManager = nullptr;
 
 	// Our shader program
     std::shared_ptr<Program> prog_wall, prog_mouse, prog_deferred;
-    
-
+ 
 	// Shape to be used (from obj file)
     shared_ptr<Shape> wall, mouse;
-    
-	
+ 
 	//camera
 	camera mycam;
 
@@ -87,15 +80,11 @@ public:
 	{
 		glViewport(0, 0, width, height);
 	}
-    
-    
 
 	void init(const std::string& resourceDirectory)
 	{
-
 		GLSL::checkVersion();
 
-		
 		// Set background color.
 		glClearColor(0.12f, 0.34f, 0.56f, 1.0f);
 
@@ -112,17 +101,18 @@ public:
 		//This is the standard:
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
 
-        
         // Initialize the GLSL program.
         prog_wall = make_shared<Program>();
         //prog_wall->setVerbose(true);
         prog_wall->setVerbose(false);
         prog_wall->setShaderNames(resourceDirectory + "/wall_vert.glsl", resourceDirectory + "/wall_frag.glsl");
+
         if (! prog_wall->init())
         {
             std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
             exit(1);
         }
+
         prog_wall->init();
         prog_wall->addUniform("P");
         prog_wall->addUniform("V");
@@ -138,11 +128,13 @@ public:
         prog_mouse = make_shared<Program>();
         prog_mouse->setVerbose(false);
         prog_mouse->setShaderNames(resourceDirectory + "/mouse_vert.glsl", resourceDirectory + "/mouse_frag.glsl");
+
         if (! prog_mouse->init())
         {
             std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
             exit(1);
         }
+
         prog_mouse->init();
         prog_mouse->addUniform("P");
         prog_mouse->addUniform("V");
@@ -155,11 +147,13 @@ public:
 		prog_deferred = make_shared<Program>();
 		prog_deferred->setVerbose(true);
 		prog_deferred->setShaderNames(resourceDirectory + "/deferred_vert.glsl", resourceDirectory + "/deferred_frag.glsl");
+
 		if (!prog_deferred->init())
 		{
 			std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
 			exit(1);
 		}
+
 		prog_deferred->init();
 		prog_deferred->addUniform("P");
 		prog_deferred->addUniform("V");
@@ -173,9 +167,7 @@ public:
     
     void initGeom(const std::string& resourceDirectory)
 	{
-
 		// Deferred Stuff
-
 		//init rectangle mesh (2 triangles) for the post processing
 		glGenVertexArrays(1, &VertexArrayIDBox);
 		glBindVertexArray(VertexArrayIDBox);
@@ -196,14 +188,12 @@ public:
 		rectangle_vertices[verccount++] = 1.0, rectangle_vertices[verccount++] = 1.0, rectangle_vertices[verccount++] = 0.0;
 		rectangle_vertices[verccount++] = 0.0, rectangle_vertices[verccount++] = 1.0, rectangle_vertices[verccount++] = 0.0;
 
-
 		//actually memcopy the data - only do this once
 		glBufferData(GL_ARRAY_BUFFER, 18 * sizeof(float), rectangle_vertices, GL_STATIC_DRAW);
 		//we need to set up the vertex array
 		glEnableVertexAttribArray(0);
 		//key function to get up how many elements to pull out at a time (3)
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-
 
 		//generate vertex buffer to hand off to OGL
 		glGenBuffers(1, &VertexBufferTex);
@@ -226,7 +216,6 @@ public:
 		glEnableVertexAttribArray(2);
 		//key function to get up how many elements to pull out at a time (3)
 		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
-		
         
         // Initialize mesh.
         wall = make_shared<Shape>();
@@ -269,7 +258,6 @@ public:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
-
         
         //[TWOTEXTURES]
         //set the 2 textures to the correct samplers in the fragment shader:
@@ -286,7 +274,6 @@ public:
 		glGenFramebuffers(1, &fb);
 		glActiveTexture(GL_TEXTURE0);
 		glBindFramebuffer(GL_FRAMEBUFFER, fb);
-
 
 		// Deffered Rendering stuff
 		// Generate Color Texture
@@ -335,7 +322,6 @@ public:
 		//-------------------------
 		//Does the GPU support current FBO configuration?
 
-
 		int Tex1Loc = glGetUniformLocation(prog_deferred->pid, "pos_tex");
 		int Tex2Loc = glGetUniformLocation(prog_deferred->pid, "col_tex");
 		int Tex3Loc = glGetUniformLocation(prog_deferred->pid, "norm_tex");
@@ -355,7 +341,6 @@ public:
 			cout << "status framebuffer: bad!!!!!!!!!!!!!!!!!!!!!!!!!";
 		}
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
     }
 
 	void update() {
@@ -370,7 +355,6 @@ public:
 
 	void render_to_texture() // aka render to framebuffer
 	{
-
 		update();
 
 		glBindFramebuffer(GL_FRAMEBUFFER, fb);
@@ -403,9 +387,6 @@ public:
 		float mapped_x = map(mouse_posX, 0, width, -1, 1);
 		float mapped_y = map(mouse_posY, 0, height, -1, 1);
 
-		//std::cout << "MAPPED X " << map(mouse_posX, 0, width, 0, 1) << endl;
-		//std::cout << "MAPPED Y " << map(mouse_posY, 0, height, 0, 1) << endl;
-
 		// MOUSE
 		T = glm::translate(glm::mat4(1), glm::vec3(mapped_x, mapped_y, -3));
 		S = glm::scale(glm::mat4(1), glm::vec3(0.1, 0.1, 0.1));
@@ -422,7 +403,6 @@ public:
 		faceTheCam = glm::rotate(glm::mat4(1), -mycam.rot.y, glm::vec3(0, 1, 0));
 
 		// WALLS
-
 		//topleftwall
 		T = glm::translate(glm::mat4(1), glm::vec3(-1.17, 1.25, -3));
 		S = glm::scale(glm::mat4(1), glm::vec3(1.5, 0.2, 1));
@@ -479,14 +459,11 @@ public:
 		glGenerateMipmap(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, FBOnorm);
 		glGenerateMipmap(GL_TEXTURE_2D);
-
 	}
 
 	void render_to_screen()
 	{
-
 		// Get current frame buffer size.
-
 		int width, height;
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
 		float aspect = width / (float)height;
@@ -513,7 +490,9 @@ public:
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, FBOnorm);
 
-		M = glm::scale(glm::mat4(1), glm::vec3(1, 1, 1)) * glm::translate(glm::mat4(1), glm::vec3(-0.5, -0.5, -1));
+		M = glm::scale(glm::mat4(1), glm::vec3(1, 1, 1));
+		T = glm::translate(glm::mat4(1), glm::vec3(-0.5, -0.5, -1));
+		M = M * T;
 		glUniformMatrix4fv(prog_deferred->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
 		glUniformMatrix4fv(prog_deferred->getUniform("V"), 1, GL_FALSE, &V[0][0]);
 		glUniformMatrix4fv(prog_deferred->getUniform("M"), 1, GL_FALSE, &M[0][0]);
@@ -522,111 +501,11 @@ public:
 
 		prog_deferred->unbind();
 	}
-    
-    void render()
-	{
-		//update();
-        
-        glClearColor(0.0f, 0.0f, 0.0f,1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-        
-		// Get current frame buffer size.
-		int width, height;
-		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
-		glViewport(0, 0, width, height);
-
-		auto P = std::make_shared<MatrixStack>();
-		P->pushMatrix();	
-		P->perspective(70., width, height, 0.1, 100.0f);
-		glm::mat4 M ,V, Rz, T, S, makeItBig, followTheCam, faceTheCam;
-		V = mycam.process();		
-
-		static float angle = 0.0;
-		angle += 0.0001;
-		float pihalf = 3.1415926 / 2.0;
-		
-		// Clear framebuffer.
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		
-		// Draw mesh using GLSL
-        
-        
-        prog_mouse->bind();
-        glUniformMatrix4fv(prog_mouse->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-        
-		float mouse_x_translated = (mouse_posX / width * 2) * 5 - 2.5;
-		float mouse_y_translated = (mouse_posY / height * 2)*(-3) + 1.5;
-
-        //mouse
-        T = glm::translate(glm::mat4(1), glm::vec3(mouse_posX / width, mouse_posY / height, -3));
-        S = glm::scale(glm::mat4(1), glm::vec3(0.1, 0.1, 0.1));
-        M = T * S;
-        glUniformMatrix4fv(prog_mouse->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-        glUniformMatrix4fv(prog_mouse->getUniform("V"), 1, GL_FALSE, &V[0][0]);
-        mouse->draw(prog_mouse);
-        
-        prog_mouse->unbind();
-        
-        //prog_wall->bind();
-        //glUniformMatrix4fv(prog_wall->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-        // glUniform3fv(prog_wall->getUniform("campos"), 1, &mycam.pos.x);
-        //faceTheCam = glm::rotate(glm::mat4(1), -mycam.rot.y, glm::vec3(0, 1, 0));
-        //
-        ////topleftwall
-        //T = glm::translate(glm::mat4(1), glm::vec3(-1.17, 1.25, -3));
-        //S = glm::scale(glm::mat4(1), glm::vec3(1.5, 0.2, 1));
-        //M = T * S;
-        //glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-        //glUniformMatrix4fv(prog_wall->getUniform("V"), 1, GL_FALSE, &V[0][0]);
-        //wall->draw(prog_wall);
-        //
-        ////toprightwall
-        //T = glm::translate(glm::mat4(1), glm::vec3(1.17, 1.25, -3));
-        //M = T * S;
-        //glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-        //wall->draw(prog_wall);
-        //
-        ////sidewall
-        //S = glm::scale(glm::mat4(1), glm::vec3(1.05, 0.25, 1));
-        //T = glm::translate(glm::mat4(1), glm::vec3(2.41, 0, -3));
-        //Rz = glm::rotate(glm::mat4(1), pihalf, glm::vec3(0, 0, -1));
-        //M = T * Rz * S;
-        //glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-        //wall->draw(prog_wall);
-        //
-        ////bottomleftwall
-        //S = glm::scale(glm::mat4(1), glm::vec3(1.5, 0.2, 1));
-        //T = glm::translate(glm::mat4(1), glm::vec3(-1.17, -1.25, -3));
-        //Rz = glm::rotate(glm::mat4(1), pihalf * 2, glm::vec3(0, 0, 1));
-        //M = T * Rz * S;
-        //glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-        //wall->draw(prog_wall);
-        //
-        ////bottomrightwall
-        //S = glm::scale(glm::mat4(1), glm::vec3(1.5, 0.2, 1));
-        //T = glm::translate(glm::mat4(1), glm::vec3(1.17, -1.25, -3));
-        //Rz = glm::rotate(glm::mat4(1), pihalf * 2, glm::vec3(0, 0, 1));
-        //M = T * Rz * S;
-        //glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-        //wall->draw(prog_wall);
-        //
-        ////midwall
-        //T = glm::translate(glm::mat4(1), glm::vec3(-1.17, 0, -3));
-        //S = glm::scale(glm::mat4(1), glm::vec3(1.5, 0.2, 1));
-        //M = T * S;
-        //glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-        //wall->draw(prog_wall);
-        //
-        //prog_wall->unbind();
-        
-        
-	}
 };
 
 //*********************************************************************************************************
 int main(int argc, char **argv)
 {
-
 	// Where the resources are loaded from
 	std::string resourceDir = "../resources";
 
@@ -634,7 +513,6 @@ int main(int argc, char **argv)
 	{
 		resourceDir = argv[1];
 	}
-
 
 	Application *application = new Application();
 
@@ -649,27 +527,20 @@ int main(int argc, char **argv)
 	// This is the code that will likely change program to program as you
 	// may need to initialize or set up different data and state
 
-
 	application->init(resourceDir);
 	application->initGeom(resourceDir);
-
 
 	// Loop until the user closes the window.
 	while (! glfwWindowShouldClose(windowManager->getHandle()))
 	{
-
 		application->render_to_texture();
 		application->render_to_screen();
-
-		// Render scene.
-		//application->render();
 
 		// Swap front and back buffers.
 		glfwSwapBuffers(windowManager->getHandle());
 		// Poll for and process events.
 		glfwPollEvents();
 	}
-
 	// Quit program.
 	windowManager->shutdown();
 	return 0;
