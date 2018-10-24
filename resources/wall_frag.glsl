@@ -27,7 +27,7 @@
 //	color.rgb = texturecolor;
 //}
 
-#version 450 core
+#version 430 core
 
 layout(location = 0) out vec4 pos_out;
 layout(location = 1) out vec4 color;

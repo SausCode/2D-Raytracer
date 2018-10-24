@@ -35,8 +35,6 @@ public:
 
 	virtual void mouseCallback(GLFWwindow *window, int button, int action, int mods) = 0;
 
-	virtual void mouseMoveCallback(GLFWwindow *window, double xpos, double ypos) = 0;
-
 	virtual void resizeCallback(GLFWwindow *window, int in_width, int in_height) = 0;
 
 };
@@ -62,6 +60,8 @@ public:
 
 	GLFWwindow *getHandle();
 
+	GLFWwindow *windowHandle = nullptr;
+
 	int getWidth() { return width; }
 	int getHeight() { return height; }
 	float getAspect() { return aspect; }
@@ -71,7 +71,6 @@ protected:
 	// This class implements the singleton design pattern
 	static WindowManager * instance;
 
-	GLFWwindow *windowHandle = nullptr;
 	EventCallbacks *callbacks = nullptr;
 
 private:
@@ -84,7 +83,6 @@ private:
 	// This is a common trick or `idiom` that makes it possible
 	static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
 	static void mouse_callback(GLFWwindow *window, int button, int action, int mods);
-	static void mouse_move_callback(GLFWwindow *window, double xpos, double ypos);
 	static void resize_callback(GLFWwindow *window, int in_width, int in_height);
 
 	int width;

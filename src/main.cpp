@@ -55,7 +55,6 @@ public:
 	GLuint VertexArrayIDBox, VertexBufferIDBox, VertexBufferTex;
     
     double mouse_posX, mouse_posY;
-	double raw_xPosMouse, raw_yPosMouse = 0.0;
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
@@ -67,13 +66,8 @@ public:
 
 	void mouseCallback(GLFWwindow *window, int button, int action, int mods)
 	{
-        glfwGetCursorPos(window, &mouse_posX, &mouse_posY);
-        cout << "Pos X " << mouse_posX <<  " Pos Y " << mouse_posY << endl;
-	}
-
-	void mouseMoveCallback(GLFWwindow *window, double xpos, double ypos) {
-		raw_xPosMouse = xpos;
-		raw_yPosMouse = windowManager->getHeight() - ypos;
+		glfwGetCursorPos(window, &mouse_posX, &mouse_posY);
+		cout << "Pos X " << mouse_posX << " Pos Y " << mouse_posY << endl;
 	}
 
 	void resizeCallback(GLFWwindow *window, int width, int height)
@@ -110,7 +104,7 @@ public:
         if (! prog_wall->init())
         {
             std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
-            exit(1);
+			exit(1);
         }
 
         prog_wall->init();
@@ -132,7 +126,7 @@ public:
         if (! prog_mouse->init())
         {
             std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
-            exit(1);
+			exit(1);
         }
 
         prog_mouse->init();
@@ -343,10 +337,6 @@ public:
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
-	void update() {
-		mouse_posX = raw_xPosMouse - mycam.pos.x;
-		mouse_posY = raw_yPosMouse - mycam.pos.y;
-	}
     
 	float map(float x, float in_min, float in_max, float out_min, float out_max)
 	{
@@ -355,7 +345,8 @@ public:
 
 	void render_to_texture() // aka render to framebuffer
 	{
-		update();
+		glfwGetCursorPos(windowManager->windowHandle, &mouse_posX, &mouse_posY);
+
 
 		glBindFramebuffer(GL_FRAMEBUFFER, fb);
 		GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
@@ -364,14 +355,11 @@ public:
 		glClearColor(0.0, 0.0, 0.0, 0.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, wall_texture);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, wall_normal_texture);
-
 		// Get current frame buffer size.
 		int width, height;
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
+		glViewport(0, 0, width, height);
+
 
 		float pihalf = 3.1415926 / 2.0;
 
@@ -381,14 +369,15 @@ public:
 		glm::mat4 M, V, Rz, T, S, makeItBig, followTheCam, faceTheCam;
 		V = mycam.process();
 
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
 		prog_mouse->bind();
 		glUniformMatrix4fv(prog_mouse->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
 
-		float mapped_x = map(mouse_posX, 0, width, -1, 1);
-		float mapped_y = map(mouse_posY, 0, height, -1, 1);
 
 		// MOUSE
-		T = glm::translate(glm::mat4(1), glm::vec3(mapped_x, mapped_y, -3));
+		T = glm::translate(glm::mat4(1), glm::vec3((mouse_posX / width) * 5 - 2.5, (mouse_posY / height)*(-3) + 1.5, -3));
 		S = glm::scale(glm::mat4(1), glm::vec3(0.1, 0.1, 0.1));
 		M = T * S;
 		glUniformMatrix4fv(prog_mouse->getUniform("M"), 1, GL_FALSE, &M[0][0]);
@@ -396,6 +385,11 @@ public:
 		mouse->draw(prog_mouse);
 
 		prog_mouse->unbind();
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, wall_texture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, wall_normal_texture);
 
 		prog_wall->bind();
 		glUniformMatrix4fv(prog_wall->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
@@ -463,6 +457,8 @@ public:
 
 	void render_to_screen()
 	{
+
+
 		// Get current frame buffer size.
 		int width, height;
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
@@ -520,9 +516,10 @@ int main(int argc, char **argv)
 	// and GL context, etc.
 
 	WindowManager *windowManager = new WindowManager();
-	windowManager->init(1920, 1080);
+	windowManager->init(1920, 1920);
 	windowManager->setEventCallbacks(application);
 	application->windowManager = windowManager;
+
 
 	// This is the code that will likely change program to program as you
 	// may need to initialize or set up different data and state

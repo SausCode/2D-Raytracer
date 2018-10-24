@@ -46,8 +46,8 @@ bool WindowManager::init(int const width, int const height)
 	//request the highest possible version of OGL - important for mac
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
 	// Create a windowed mode window and its OpenGL context.
 	windowHandle = glfwCreateWindow(width, height, "474 Final Project", nullptr, nullptr);
@@ -74,7 +74,6 @@ bool WindowManager::init(int const width, int const height)
 
 	glfwSetKeyCallback(windowHandle, key_callback);
 	glfwSetMouseButtonCallback(windowHandle, mouse_callback);
-	glfwSetCursorPosCallback(windowHandle, mouse_move_callback);
 	glfwSetFramebufferSizeCallback(windowHandle, resize_callback);
 
 	return true;
@@ -114,14 +113,6 @@ void WindowManager::mouse_callback(GLFWwindow * window, int button, int action, 
 	if (instance && instance->callbacks)
 	{
 		instance->callbacks->mouseCallback(window, button, action, mods);
-	}
-}
-
-void WindowManager::mouse_move_callback(GLFWwindow *window, double xpos, double ypos)
-{
-	if (instance && instance->callbacks)
-	{
-		instance->callbacks->mouseMoveCallback(window, xpos, ypos);
 	}
 }
 
