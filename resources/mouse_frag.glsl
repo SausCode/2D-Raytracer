@@ -1,6 +1,10 @@
-#version 430 core 
+#version 430 core
+
+layout(location = 0) out vec4 color;
+layout(location = 1) out vec4 pos_out;
+layout(location = 2) out vec4 norm_out;
+
 in vec3 fragNor;
-out vec4 color;
 in vec3 pos;
 in vec2 fragTex;
 

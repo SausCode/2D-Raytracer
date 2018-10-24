@@ -2,8 +2,8 @@
 out vec4 color;
 in vec2 fragTex;
 in vec3 fragNor;
-layout(location = 0) uniform sampler2D pos_tex;
-layout(location = 1) uniform sampler2D col_tex;
+layout(location = 0) uniform sampler2D col_tex;
+layout(location = 1) uniform sampler2D pos_tex;
 layout(location = 2) uniform sampler2D norm_tex;
 
 uniform vec3 campos;

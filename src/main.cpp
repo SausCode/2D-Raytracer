@@ -270,9 +270,20 @@ public:
 		glBindFramebuffer(GL_FRAMEBUFFER, fb);
 
 		// Deffered Rendering stuff
+
 		// Generate Color Texture
-		glGenTextures(1, &FBOpos);
+		glGenTextures(1, &FBOcol);
 		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, FBOcol);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_BGRA, GL_FLOAT, NULL);
+		
+		// Generate Position Texture
+		glGenTextures(1, &FBOpos);
+		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, FBOpos);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
@@ -280,18 +291,8 @@ public:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
 		glGenerateMipmap(GL_TEXTURE_2D);
-
+		
 		// Generate Normal Texture
-		glGenTextures(1, &FBOcol);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, FBOcol);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_BGRA, GL_FLOAT, NULL);
-
-		// Generate Position Texture
 		glGenTextures(1, &FBOnorm);
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, FBOnorm);
@@ -302,8 +303,8 @@ public:
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_BGRA, GL_FLOAT, NULL);
 
 		//Attach 2D texture to this FBO
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, FBOpos, 0);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, FBOcol , 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, FBOcol, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, FBOpos, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, FBOnorm, 0);
 
 		//-------------------------
@@ -316,8 +317,8 @@ public:
 		//-------------------------
 		//Does the GPU support current FBO configuration?
 
-		int Tex1Loc = glGetUniformLocation(prog_deferred->pid, "pos_tex");
-		int Tex2Loc = glGetUniformLocation(prog_deferred->pid, "col_tex");
+		int Tex1Loc = glGetUniformLocation(prog_deferred->pid, "col_tex");
+		int Tex2Loc = glGetUniformLocation(prog_deferred->pid, "pos_tex");
 		int Tex3Loc = glGetUniformLocation(prog_deferred->pid, "norm_tex");
 
 		glUniform1i(Tex1Loc, 0);
@@ -445,11 +446,11 @@ public:
 		//done, unbind stuff
 		prog_wall->unbind();
 
-		//Save output to framebuffer
+		// Save output to framebuffer
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glBindTexture(GL_TEXTURE_2D, FBOpos);
-		glGenerateMipmap(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, FBOcol);
+		glGenerateMipmap(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, FBOpos);
 		glGenerateMipmap(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, FBOnorm);
 		glGenerateMipmap(GL_TEXTURE_2D);
@@ -457,8 +458,6 @@ public:
 
 	void render_to_screen()
 	{
-
-
 		// Get current frame buffer size.
 		int width, height;
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
@@ -480,9 +479,9 @@ public:
 		glUniform3fv(prog_deferred->getUniform("campos"), 1, &mycam.pos.x);
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, FBOpos);
-		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, FBOcol);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, FBOpos);
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, FBOnorm);
 
