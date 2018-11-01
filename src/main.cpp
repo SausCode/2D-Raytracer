@@ -24,6 +24,12 @@
 using namespace std;
 using namespace glm;
 
+class ssbo_data
+{
+public:
+	ivec4 angle_list[1024];
+};
+
 class Application : public EventCallbacks
 {
 
@@ -55,12 +61,25 @@ public:
 	GLuint VertexArrayIDBox, VertexBufferIDBox, VertexBufferTex;
     
     double mouse_posX, mouse_posY;
+	int pass_number = 1;
+
+	ssbo_data ssbo_CPUMEM;
+	GLuint ssbo_GPU_id;
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
 		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		{
 			glfwSetWindowShouldClose(window, GL_TRUE);
+		}
+
+		if (key == GLFW_KEY_D && action == GLFW_PRESS)
+		{
+			mycam.pos.x -= 1;
+		}
+		if (key == GLFW_KEY_A && action == GLFW_PRESS)
+		{
+			mycam.pos.x += 1;
 		}
 	}
 
@@ -153,6 +172,7 @@ public:
 		prog_deferred->addUniform("V");
 		prog_deferred->addUniform("M");
 		prog_deferred->addUniform("campos");
+		prog_deferred->addUniform("pass");
 		prog_deferred->addUniform("bloom");
 		prog_deferred->addAttribute("vertPos");
 		prog_deferred->addAttribute("vertNor");
@@ -175,12 +195,12 @@ public:
 		// front
 		int verccount = 0;
 
-		rectangle_vertices[verccount++] = 0.0, rectangle_vertices[verccount++] = 0.0, rectangle_vertices[verccount++] = 0.0;
-		rectangle_vertices[verccount++] = 1.0, rectangle_vertices[verccount++] = 0.0, rectangle_vertices[verccount++] = 0.0;
-		rectangle_vertices[verccount++] = 0.0, rectangle_vertices[verccount++] = 1.0, rectangle_vertices[verccount++] = 0.0;
-		rectangle_vertices[verccount++] = 1.0, rectangle_vertices[verccount++] = 0.0, rectangle_vertices[verccount++] = 0.0;
+		rectangle_vertices[verccount++] = -1.0, rectangle_vertices[verccount++] = -1.0, rectangle_vertices[verccount++] = 0.0;
+		rectangle_vertices[verccount++] = 1.0, rectangle_vertices[verccount++] = -1.0, rectangle_vertices[verccount++] = 0.0;
+		rectangle_vertices[verccount++] = -1.0, rectangle_vertices[verccount++] = 1.0, rectangle_vertices[verccount++] = 0.0;
+		rectangle_vertices[verccount++] = 1.0, rectangle_vertices[verccount++] = -1.0, rectangle_vertices[verccount++] = 0.0;
 		rectangle_vertices[verccount++] = 1.0, rectangle_vertices[verccount++] = 1.0, rectangle_vertices[verccount++] = 0.0;
-		rectangle_vertices[verccount++] = 0.0, rectangle_vertices[verccount++] = 1.0, rectangle_vertices[verccount++] = 0.0;
+		rectangle_vertices[verccount++] = -1.0, rectangle_vertices[verccount++] = 1.0, rectangle_vertices[verccount++] = 0.0;
 
 		//actually memcopy the data - only do this once
 		glBufferData(GL_ARRAY_BUFFER, 18 * sizeof(float), rectangle_vertices, GL_STATIC_DRAW);
@@ -197,12 +217,12 @@ public:
 		float t = 1. / 100.;
 		GLfloat *rectangle_texture_coords = new GLfloat[12];
 		int texccount = 0;
-		rectangle_texture_coords[texccount++] = 0, rectangle_texture_coords[texccount++] = 0;
-		rectangle_texture_coords[texccount++] = 1, rectangle_texture_coords[texccount++] = 0;
-		rectangle_texture_coords[texccount++] = 0, rectangle_texture_coords[texccount++] = 1;
-		rectangle_texture_coords[texccount++] = 1, rectangle_texture_coords[texccount++] = 0;
+		rectangle_texture_coords[texccount++] = -1, rectangle_texture_coords[texccount++] = -1;
+		rectangle_texture_coords[texccount++] = 1, rectangle_texture_coords[texccount++] = -1;
+		rectangle_texture_coords[texccount++] = -1, rectangle_texture_coords[texccount++] = 1;
+		rectangle_texture_coords[texccount++] = 1, rectangle_texture_coords[texccount++] = -1;
 		rectangle_texture_coords[texccount++] = 1, rectangle_texture_coords[texccount++] = 1;
-		rectangle_texture_coords[texccount++] = 0, rectangle_texture_coords[texccount++] = 1;
+		rectangle_texture_coords[texccount++] = -1, rectangle_texture_coords[texccount++] = 1;
 
 		//actually memcopy the data - only do this once
 		glBufferData(GL_ARRAY_BUFFER, 12 * sizeof(float), rectangle_texture_coords, GL_STATIC_DRAW);
@@ -338,6 +358,25 @@ public:
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
+	void create_SSBO() {
+		// Fill angle list with big numbers
+		for (int i = 0; i < 1024; i++) {
+			ssbo_CPUMEM.angle_list[i] = ivec4(i, INT_MAX, INT_MAX, INT_MAX);
+		}
+
+		glUseProgram(prog_deferred->pid);
+		GLuint block_index = 0;
+		block_index = glGetProgramResourceIndex(prog_deferred->pid, GL_SHADER_STORAGE_BLOCK, "shader_data");
+		GLuint ssbo_binding_point_index = 2;
+		glShaderStorageBlockBinding(prog_deferred->pid, block_index, ssbo_binding_point_index);
+
+		glGenBuffers(1, &ssbo_GPU_id);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_GPU_id);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ssbo_data), &ssbo_CPUMEM, GL_DYNAMIC_DRAW);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_GPU_id);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
+	}
+
     
 	float map(float x, float in_min, float in_max, float out_min, float out_max)
 	{
@@ -347,7 +386,6 @@ public:
 	void render_to_texture() // aka render to framebuffer
 	{
 		glfwGetCursorPos(windowManager->windowHandle, &mouse_posX, &mouse_posY);
-
 
 		glBindFramebuffer(GL_FRAMEBUFFER, fb);
 		GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
@@ -361,7 +399,6 @@ public:
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
 		glViewport(0, 0, width, height);
 
-
 		float pihalf = 3.1415926 / 2.0;
 
 		auto P = std::make_shared<MatrixStack>();
@@ -372,10 +409,8 @@ public:
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
 		prog_mouse->bind();
 		glUniformMatrix4fv(prog_mouse->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-
 
 		// MOUSE
 		T = glm::translate(glm::mat4(1), glm::vec3((mouse_posX / width) * 5 - 2.5, (mouse_posY / height)*(-3) + 1.5, -3));
@@ -468,23 +503,27 @@ public:
 		P->pushMatrix();
 		P->perspective(70., width, height, 0.1, 100.0f);
 		glm::mat4 M, V, S, T;
-
 		V = glm::mat4(1);
-
 		// Clear framebuffer.
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		prog_deferred->bind();
 
-		glUniform3fv(prog_deferred->getUniform("campos"), 1, &mycam.pos.x);
+		// Get SSBO ready to send
+		GLuint block_index = 0;
+		block_index = glGetProgramResourceIndex(prog_deferred->pid, GL_SHADER_STORAGE_BLOCK, "shader_data");
+		GLuint ssbo_binding_point_index = 0;
+		glShaderStorageBlockBinding(prog_deferred->pid, block_index, ssbo_binding_point_index);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_GPU_id);
 
+		glUniform3fv(prog_deferred->getUniform("campos"), 1, &mycam.pos.x);
+		glUniform1i(prog_deferred->getUniform("pass"), pass_number);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, FBOcol);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, FBOpos);
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, FBOnorm);
-
 		M = glm::scale(glm::mat4(1), glm::vec3(1, 1, 1));
 		T = glm::translate(glm::mat4(1), glm::vec3(-0.5, -0.5, -1));
 		M = M * T;
@@ -494,7 +533,25 @@ public:
 		glBindVertexArray(VertexArrayIDBox);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
+		// Get SSBO back
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_GPU_id);
+		GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+		int siz = sizeof(ssbo_data);
+		memcpy(&ssbo_CPUMEM, p, siz);
+		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+
 		prog_deferred->unbind();
+
+		if (pass_number == 1) {
+			pass_number = 2;
+		}
+		else {
+			pass_number = 1;
+		}
+
+		//for (int i = 0; i < 1024; i++) {
+		//	cout << ssbo_CPUMEM.angle_list[i].x << " " << ssbo_CPUMEM.angle_list[i].y << " " << ssbo_CPUMEM.angle_list[i].z << " " << ssbo_CPUMEM.angle_list[i].w << endl;
+		//}
 	}
 };
 
@@ -525,11 +582,13 @@ int main(int argc, char **argv)
 
 	application->init(resourceDir);
 	application->initGeom(resourceDir);
+	application->create_SSBO();
 
 	// Loop until the user closes the window.
 	while (! glfwWindowShouldClose(windowManager->getHandle()))
 	{
 		application->render_to_texture();
+		application->render_to_screen();
 		application->render_to_screen();
 
 		// Swap front and back buffers.
