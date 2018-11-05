@@ -435,49 +435,60 @@ public:
 
 		// WALLS
 		//topleftwall
-		T = glm::translate(glm::mat4(1), glm::vec3(-1.17, 1.25, -3));
-		S = glm::scale(glm::mat4(1), glm::vec3(1.5, 0.2, 1));
+		T = glm::translate(glm::mat4(1), glm::vec3((0 / width) * 2 - 1, (0 / height)*(-2) + 1, -3));
+		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.1, 1));
 		M = T * S;
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		glUniformMatrix4fv(prog_wall->getUniform("V"), 1, GL_FALSE, &V[0][0]);
+
+
 		wall->draw(prog_wall);
 
+
 		//toprightwall
-		T = glm::translate(glm::mat4(1), glm::vec3(1.17, 1.25, -3));
+		T = glm::translate(glm::mat4(1), glm::vec3((width / width) * 2 - 1, (0 / height)*(-2) + 1, -3));
 		M = T * S;
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		wall->draw(prog_wall);
 
 		//sidewall
-		S = glm::scale(glm::mat4(1), glm::vec3(1.05, 0.25, 1));
-		T = glm::translate(glm::mat4(1), glm::vec3(2.41, 0, -3));
+		S = glm::scale(glm::mat4(1), glm::vec3(0.9, 0.1, 1));
+		T = glm::translate(glm::mat4(1), glm::vec3((width / width) * 2 - 0.35, 0, -3));
 		Rz = glm::rotate(glm::mat4(1), pihalf, glm::vec3(0, 0, -1));
 		M = T * Rz * S;
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		wall->draw(prog_wall);
 
 		//bottomleftwall
-		S = glm::scale(glm::mat4(1), glm::vec3(1.5, 0.2, 1));
-		T = glm::translate(glm::mat4(1), glm::vec3(-1.17, -1.25, -3));
+		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.1, 1));
+		T = glm::translate(glm::mat4(1), glm::vec3((0 / width) * 2 - 1, (height / height)*(-2) + 1, -3));
 		Rz = glm::rotate(glm::mat4(1), pihalf * 2, glm::vec3(0, 0, 1));
 		M = T * Rz * S;
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		wall->draw(prog_wall);
 
 		//bottomrightwall
-		S = glm::scale(glm::mat4(1), glm::vec3(1.5, 0.2, 1));
-		T = glm::translate(glm::mat4(1), glm::vec3(1.17, -1.25, -3));
+		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.1, 1));
+		T = glm::translate(glm::mat4(1), glm::vec3((width / width) * 2 - 1, (height / height)*(-2) + 1, -3));
 		Rz = glm::rotate(glm::mat4(1), pihalf * 2, glm::vec3(0, 0, 1));
 		M = T * Rz * S;
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		wall->draw(prog_wall);
 
-		//midwall
-		T = glm::translate(glm::mat4(1), glm::vec3(-1.17, 0, -3));
-		S = glm::scale(glm::mat4(1), glm::vec3(1.5, 0.2, 1));
+		//midwall1
+		T = glm::translate(glm::mat4(1), glm::vec3((0 / width) * 2 - 1, ((height / height)*(-2) + 1) / 2 - 0.1, -3));
+		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.1, 1));
 		M = T * S;
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		wall->draw(prog_wall);
+
+		//midwall2
+		T = glm::translate(glm::mat4(1), glm::vec3((0 / width) * 2 - 1, ((height / height)*(-2) + 1) / 2 + 0.1, -3));
+		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.1, 1));
+		M = T * Rz * S;
+		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		wall->draw(prog_wall);
+
 
 		//done, unbind stuff
 		prog_wall->unbind();
