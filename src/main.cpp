@@ -409,7 +409,9 @@ public:
 		glViewport(0, 0, width, height);
 
 		auto P = std::make_shared<MatrixStack>();
-		glm::mat4 M, T, S;
+		glm::mat4 M, T, S, R;
+		float pi = 3.14159625;
+		float pi_half = pi / 2.;
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -428,19 +430,36 @@ public:
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		wall->draw(prog_wall);
 
-		// Mid wall
-		T = glm::translate(glm::mat4(1), glm::vec3(-.5, 0.0, 0));
+		// Mid wall 1
+		T = glm::translate(glm::mat4(1), glm::vec3(-.5, -0.0625, 0));
 		S = glm::scale(glm::mat4(1), glm::vec3(0.5, 0.1, 1));
 		M = T * S;
+		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		wall->draw(prog_wall);
+
+		// Mid wall 2
+		T = glm::translate(glm::mat4(1), glm::vec3(-.5, 0.0625, 0));
+		S = glm::scale(glm::mat4(1), glm::vec3(0.5, 0.1, 1));
+		R = glm::rotate(glm::mat4(1), pi, glm::vec3(0, 0, 1));
+		M = T * R * S;
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		wall->draw(prog_wall);
 
 		// Bottom Wall
 		T = glm::translate(glm::mat4(1), glm::vec3(0.0, -.9, 0));
 		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.1, 1));
-		M = T * S;
+		M = T * R * S;
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		wall->draw(prog_wall);
+
+		// Right Wall
+		T = glm::translate(glm::mat4(1), glm::vec3(0.9, 0, 0));
+		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.1, 1));
+		R = glm::rotate(glm::mat4(1), -pi_half, glm::vec3(0, 0, 1));
+		M = T * R * S;
+		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		wall->draw(prog_wall);
+
 		//done, unbind stuff
 		prog_wall->unbind();
 
