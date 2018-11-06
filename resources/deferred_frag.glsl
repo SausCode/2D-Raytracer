@@ -14,7 +14,6 @@ layout(location = 0) uniform sampler2D col_tex;
 layout(location = 1) uniform sampler2D pos_tex;
 layout(location = 2) uniform sampler2D norm_tex;
 
-uniform vec3 campos;
 // 1 for first, 2 for second
 uniform int pass;
 uniform vec3 light_pos;

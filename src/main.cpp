@@ -85,12 +85,7 @@ public:
 		}
 		if (key == GLFW_KEY_K && action == GLFW_PRESS)
 		{
-
-			glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_GPU_id);
-			GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-			int siz = sizeof(ssbo_data);
-			memcpy(&ssbo_CPUMEM, p, siz);
-			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+			get_SSBO_back();
 		}
 	}
 
@@ -174,9 +169,7 @@ public:
 		}
 
 		prog_deferred->init();
-		prog_deferred->addUniform("M");
 		prog_deferred->addUniform("light_pos");
-		prog_deferred->addUniform("campos");
 		prog_deferred->addUniform("pass");
 		prog_deferred->addAttribute("vertPos");
 		prog_deferred->addAttribute("vertTex");
@@ -386,6 +379,19 @@ public:
 		return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 	}
 
+	void get_SSBO_back() {
+		// Get SSBO back
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_GPU_id);
+		GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+		int siz = sizeof(ssbo_data);
+		memcpy(&ssbo_CPUMEM, p, siz);
+		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+
+		for (int i = 0; i < ssbo_size; i++) {
+			cout << ssbo_CPUMEM.angle_list[i].x << " " << ssbo_CPUMEM.angle_list[i].y << " " << ssbo_CPUMEM.angle_list[i].z << " " << ssbo_CPUMEM.angle_list[i].w << endl;
+		}
+	}
+
 	void render_to_texture() // aka render to framebuffer
 	{
 		glfwGetCursorPos(windowManager->windowHandle, &mouse_posX, &mouse_posY);
@@ -413,7 +419,6 @@ public:
 		glBindTexture(GL_TEXTURE_2D, wall_normal_texture);
 
 		prog_wall->bind();
-		glUniform3fv(prog_wall->getUniform("campos"), 1, &mycam.pos.x);
 
 		// WALLS
 		// Top Wall
@@ -480,15 +485,12 @@ public:
 		prog_mouse->unbind();
 
 		prog_deferred->bind();
-
 		// Get SSBO ready to send
 		GLuint block_index = 0;
 		block_index = glGetProgramResourceIndex(prog_deferred->pid, GL_SHADER_STORAGE_BLOCK, "shader_data");
 		GLuint ssbo_binding_point_index = 0;
 		glShaderStorageBlockBinding(prog_deferred->pid, block_index, ssbo_binding_point_index);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_GPU_id);
-
-		glUniform3fv(prog_deferred->getUniform("campos"), 1, &mycam.pos.x);
 		glUniform1i(prog_deferred->getUniform("pass"), pass_number);
 		glUniform3fv(prog_deferred->getUniform("light_pos"), 1, &mouse_pos.x);
 		glActiveTexture(GL_TEXTURE0);
@@ -497,22 +499,8 @@ public:
 		glBindTexture(GL_TEXTURE_2D, FBOpos);
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, FBOnorm);
-
-		M = glm::scale(glm::mat4(1), glm::vec3(1, 1, 1));
-		T = glm::translate(glm::mat4(1), glm::vec3(-0.5, -0.5, -1));
-		M = mat4(1);
-
-		glUniformMatrix4fv(prog_deferred->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		glBindVertexArray(VertexArrayIDBox);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
-
-		// Get SSBO back
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_GPU_id);
-		GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-		int siz = sizeof(ssbo_data);
-		memcpy(&ssbo_CPUMEM, p, siz);
-		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-
 		prog_deferred->unbind();
 
 		if (pass_number == 1) {
@@ -521,10 +509,6 @@ public:
 		else {
 			pass_number = 1;
 		}
-
-		//for (int i = 0; i < ssbo_size; i++) {
-		//	cout << ssbo_CPUMEM.angle_list[i].x << " " << ssbo_CPUMEM.angle_list[i].y << " " << ssbo_CPUMEM.angle_list[i].z << " " << ssbo_CPUMEM.angle_list[i].w << endl;
-		//}
 	}
 };
 

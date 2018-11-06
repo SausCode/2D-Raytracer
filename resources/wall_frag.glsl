@@ -4,8 +4,6 @@ layout(location = 0) out vec4 color;
 layout(location = 1) out vec4 pos_out;
 layout(location = 2) out vec4 norm_out;
 
-uniform vec3 campos;
-
 in vec3 fragPos;
 in vec2 fragTex;
 in vec3 fragNor;
