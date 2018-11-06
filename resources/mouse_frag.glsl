@@ -17,6 +17,8 @@ void main()
 	vec3 ld = normalize(lp - pos);
 	float light = length(ld);
 	color.rgb = vec3(1,1,0);
+	pos_out.rgb = vec3(1,1,0);
+	norm_out.rgb = vec3(1,1,0);
 
 	color.a=1;
 	 

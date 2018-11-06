@@ -17,101 +17,67 @@ layout(location = 2) uniform sampler2D norm_tex;
 uniform vec3 campos;
 // 1 for first, 2 for second
 uniform int pass;
+uniform vec3 light_pos;
+
+float map(float x, float in_min, float in_max, float out_min, float out_max)
+{
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
 
 void main()
 {
 	vec3 texturecolor = texture(col_tex, fragTex).rgb;
 	vec3 normals = texture(norm_tex, fragTex).rgb;
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
-	
 
-//	//diffuse light
-//	vec3 lp = vec3(100,100,100);
-//	vec3 ld = normalize(lp - world_pos);
-//	float light = dot(ld,normals);	
-//	light = clamp(light,0,1);
-//
-//	//specular light
-//	vec3 camvec = normalize(campos - world_pos);
-//	vec3 h = normalize(camvec+ld);
-//	float spec = pow(dot(h,normals),5);
-//	spec = clamp(spec,0,1)*0.3;
-//	
-//	color.rgb = texturecolor *light + vec3(1,1,1)*spec;
-//	color.a=1;
-
-	vec3 fragpos = world_pos;
-	vec3 lightpos = vec3(1,1,-3);
+	vec2 fragpos = world_pos.xy;
+	vec3 lightpos = light_pos;
 	// Light Direction
-	vec3 ld = normalize(lightpos-fragpos);
+	vec2 ld = normalize(fragpos.xy-lightpos.xy);
 	// Angle between fragment and light
 	float a = dot(ld.xy, vec2(1,0));
 	// Distance of light to fragment
-	float dist = length(lightpos-fragpos);
-	//color.rgb = vec3(a);
-	color.rgb = texturecolor;
+	float dist = length(lightpos.xy-fragpos.xy);
+	// Differentiate between negative and positive angles
+	float b=a;
+	if (ld.y < 0){
+		a = 2-a;
+	}
+	if (equal(vec3(0,0,0), texturecolor).x){
+		color.rgb = vec3(0,0,0);
+		return;
+	}
+	
+
+	// Map result from -1 -> 3 to 0 -> 1023
+	a += 1;
+	a *= 1023./4.;
+	a/=1023;
+	//a = map(a, 0, 1023, 0, 1);
+	color.rgb = vec3((b+1)/2.);
+	//color.rgb = texturecolor;
+	//color.rgb = vec3(map(dist, 0, 2.828, 0, 1));
 	color.a=1;
+	int distance_converted = int(map(dist, 0, 2.828, 0, 3000000));
+	float b_converted = (b+1.)/2.;
+	color.rgb = vec3(b_converted);
+	//return;
 
 	if (pass == 1){
-		// First Pass
-		vec3 fragpos = world_pos;
-		vec3 lightpos = vec3(1,1,-3);
-		// Light Direction
-		vec3 ld = normalize(lightpos-fragpos);
-		// Angle between fragment and light
-		float a = dot(ld.xy, vec2(1,0));
-		// Distance of light to fragment
-		float dist = length(lightpos-fragpos);
-
-		// Differentiate between negative and positive angles
-		if (ld.y < 0){
-			a = 2-a;
-		}
-
-		// Map result from -1 -> 3 to 0 -> 1023
-		a += 1;
-		a *= 1023./4.;
-
-		color.rgb = vec3(a);
-
 		// Convert float to int
-		int idist = int(dist*1e8);
-		int bufferindex = int(a);
-		atomicMin(angle_list[bufferindex].y, idist);
+		int bufferindex = int(b*1024);
+		atomicMin(angle_list[bufferindex].y, distance_converted);
 	}
 
 	else{
-		// Second Pass
-		vec3 fragpos = world_pos;
-		vec3 lightpos = vec3(1,1,-3);
-		// Light Direction
-		vec3 ld = normalize(lightpos-fragpos);
-		// Angle between fragment and light
-		float a = dot(ld.xy, vec2(1,0));
-		// Distance of light to fragment
-		float dist = length(lightpos-fragpos);
-
-		// Differentiate between negative and positive angles
-		if (ld.y < 0){
-			a = 2-a;
+		int bufferindex = int(b*1024);
+		color.rgb = vec3(map(angle_list[bufferindex].y, 0, 3000000, 0, 1));
+		if (angle_list[bufferindex].y > 0){
+			color.rgb = vec3(b);
 		}
-
-		// Map result from -1 -> 3 to 0 -> 1023
-		a += 1;
-		a *= 1023./4.;
-		int idist = int(dist*1e8);
-		int bufferindex = int(a);
-
-		int comp_dist = angle_list[bufferindex].y;
-
-		if (comp_dist > dist/1e8){
-			//color.rgb = texturecolor;
-		}
-
 		else{
-			//color.rgb = vec3(0);
+			color.rgb = vec3(0);
 		}
-
 	}
 
 }

@@ -171,6 +171,7 @@ public:
 		prog_deferred->addUniform("P");
 		prog_deferred->addUniform("V");
 		prog_deferred->addUniform("M");
+		prog_deferred->addUniform("light_pos");
 		prog_deferred->addUniform("campos");
 		prog_deferred->addUniform("pass");
 		prog_deferred->addUniform("bloom");
@@ -295,8 +296,8 @@ public:
 		glGenTextures(1, &FBOcol);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, FBOcol);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_BGRA, GL_FLOAT, NULL);
@@ -309,15 +310,15 @@ public:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_BGRA, GL_FLOAT, NULL);
 		glGenerateMipmap(GL_TEXTURE_2D);
 		
 		// Generate Normal Texture
 		glGenTextures(1, &FBOnorm);
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, FBOnorm);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_BGRA, GL_FLOAT, NULL);
@@ -518,6 +519,9 @@ public:
 
 		glUniform3fv(prog_deferred->getUniform("campos"), 1, &mycam.pos.x);
 		glUniform1i(prog_deferred->getUniform("pass"), pass_number);
+		glm::vec3 mouse_pos = glm::vec3((mouse_posX / width) * 5 - 2.5, (mouse_posY / height)*(-3) + 1.5, -3);
+		glm::vec3 zero = vec3(0);
+		glUniform3fv(prog_deferred->getUniform("light_pos"), 1, &mouse_pos.x);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, FBOcol);
 		glActiveTexture(GL_TEXTURE1);
@@ -582,11 +586,12 @@ int main(int argc, char **argv)
 
 	application->init(resourceDir);
 	application->initGeom(resourceDir);
-	application->create_SSBO();
+	
 
 	// Loop until the user closes the window.
 	while (! glfwWindowShouldClose(windowManager->getHandle()))
 	{
+		application->create_SSBO();
 		application->render_to_texture();
 		application->render_to_screen();
 		application->render_to_screen();
