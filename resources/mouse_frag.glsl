@@ -21,5 +21,7 @@ void main()
 	norm_out.rgb = vec3(1,1,0);
 
 	color.a=1;
+
+	color.rgb = vec3(1);
 	 
 }

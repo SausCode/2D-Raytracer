@@ -24,10 +24,12 @@
 using namespace std;
 using namespace glm;
 
+#define ssbo_size 2048
+
 class ssbo_data
 {
 public:
-	ivec4 angle_list[1024];
+	ivec4 angle_list[ssbo_size];
 };
 
 class Application : public EventCallbacks
@@ -132,14 +134,11 @@ public:
         if (! prog_wall->init())
         {
             std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
-			exit(1);
+			//exit(1);
         }
 
         prog_wall->init();
-        prog_wall->addUniform("P");
-        prog_wall->addUniform("V");
         prog_wall->addUniform("M");
-        prog_wall->addUniform("campos");
         prog_wall->addAttribute("vertPos");
         prog_wall->addAttribute("vertNor");
         prog_wall->addAttribute("vertTex");
@@ -158,8 +157,6 @@ public:
         }
 
         prog_mouse->init();
-        prog_mouse->addUniform("P");
-        prog_mouse->addUniform("V");
         prog_mouse->addUniform("M");
         prog_mouse->addAttribute("vertPos");
         prog_mouse->addAttribute("vertNor");
@@ -177,15 +174,11 @@ public:
 		}
 
 		prog_deferred->init();
-		prog_deferred->addUniform("P");
-		prog_deferred->addUniform("V");
 		prog_deferred->addUniform("M");
 		prog_deferred->addUniform("light_pos");
 		prog_deferred->addUniform("campos");
 		prog_deferred->addUniform("pass");
-		prog_deferred->addUniform("bloom");
 		prog_deferred->addAttribute("vertPos");
-		prog_deferred->addAttribute("vertNor");
 		prog_deferred->addAttribute("vertTex");
     }
     
@@ -370,7 +363,7 @@ public:
 
 	void create_SSBO() {
 		// Fill angle list with big numbers
-		for (int i = 0; i < 1024; i++) {
+		for (int i = 0; i < ssbo_size; i++) {
 			ssbo_CPUMEM.angle_list[i] = ivec4(i, INT_MAX, INT_MAX, INT_MAX);
 		}
 
@@ -409,28 +402,10 @@ public:
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
 		glViewport(0, 0, width, height);
 
-		float pihalf = 3.1415926 / 2.0;
-
 		auto P = std::make_shared<MatrixStack>();
-		P->pushMatrix();
-		P->perspective(70., width, height, 0.1, 100.0f);
-		glm::mat4 M, V, Rz, T, S, makeItBig, followTheCam, faceTheCam;
-		V = mycam.process();
+		glm::mat4 M, T, S;
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		//prog_mouse->bind();
-		//glUniformMatrix4fv(prog_mouse->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-
-		//// MOUSE
-		//T = glm::translate(glm::mat4(1), glm::vec3((mouse_posX / width) * 5 - 2.5, (mouse_posY / height)*(-3) + 1.5, -3));
-		//S = glm::scale(glm::mat4(1), glm::vec3(0.1, 0.1, 0.1));
-		//M = T * S;
-		//glUniformMatrix4fv(prog_mouse->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		//glUniformMatrix4fv(prog_mouse->getUniform("V"), 1, GL_FALSE, &V[0][0]);
-		//mouse->draw(prog_mouse);
-
-		//prog_mouse->unbind();
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, wall_texture);
@@ -438,76 +413,29 @@ public:
 		glBindTexture(GL_TEXTURE_2D, wall_normal_texture);
 
 		prog_wall->bind();
-		glUniformMatrix4fv(prog_wall->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
 		glUniform3fv(prog_wall->getUniform("campos"), 1, &mycam.pos.x);
-		faceTheCam = glm::rotate(glm::mat4(1), -mycam.rot.y, glm::vec3(0, 1, 0));
 
 		// WALLS
-		//topleftwall
+		// Top Wall
 		T = glm::translate(glm::mat4(1), glm::vec3(0.0,0.9,0));
 		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.1, 1));
 		M = T * S;
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		glUniformMatrix4fv(prog_wall->getUniform("V"), 1, GL_FALSE, &V[0][0]);
-
-
 		wall->draw(prog_wall);
 
-
-		T = glm::translate(glm::mat4(1), glm::vec3(0.5, 0.0, 0));
+		// Mid wall
+		T = glm::translate(glm::mat4(1), glm::vec3(-.5, 0.0, 0));
 		S = glm::scale(glm::mat4(1), glm::vec3(0.5, 0.1, 1));
 		M = T * S;
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		glUniformMatrix4fv(prog_wall->getUniform("V"), 1, GL_FALSE, &V[0][0]);
-
-
 		wall->draw(prog_wall);
 
-		//toprightwall
-		T = glm::translate(glm::mat4(1), glm::vec3((width / width) * 2 - 1, (0 / height)*(-2) + 1, -3));
-		M = T * S;
-		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		//wall->draw(prog_wall);
-
-		//sidewall
-		S = glm::scale(glm::mat4(1), glm::vec3(0.9, 0.1, 1));
-		T = glm::translate(glm::mat4(1), glm::vec3((width / width) * 2 - 0.35, 0, -3));
-		Rz = glm::rotate(glm::mat4(1), pihalf, glm::vec3(0, 0, -1));
-		M = T * Rz * S;
-		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		//wall->draw(prog_wall);
-
-		//bottomleftwall
-		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.1, 1));
-		T = glm::translate(glm::mat4(1), glm::vec3((0 / width) * 2 - 1, (height / height)*(-2) + 1, -3));
-		Rz = glm::rotate(glm::mat4(1), pihalf * 2, glm::vec3(0, 0, 1));
-		M = T * Rz * S;
-		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		//wall->draw(prog_wall);
-
-		//bottomrightwall
-		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.1, 1));
-		T = glm::translate(glm::mat4(1), glm::vec3((width / width) * 2 - 1, (height / height)*(-2) + 1, -3));
-		Rz = glm::rotate(glm::mat4(1), pihalf * 2, glm::vec3(0, 0, 1));
-		M = T * Rz * S;
-		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		//wall->draw(prog_wall);
-
-		//midwall1
-		T = glm::translate(glm::mat4(1), glm::vec3((0 / width) * 2 - 1, ((height / height)*(-2) + 1) / 2 - 0.1, -3));
+		// Bottom Wall
+		T = glm::translate(glm::mat4(1), glm::vec3(0.0, -.9, 0));
 		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.1, 1));
 		M = T * S;
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		//wall->draw(prog_wall);
-
-		//midwall2
-		T = glm::translate(glm::mat4(1), glm::vec3((0 / width) * 2 - 1, ((height / height)*(-2) + 1) / 2 + 0.1, -3));
-		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.1, 1));
-		M = T * Rz * S;
-		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		//wall->draw(prog_wall);
-
-
+		wall->draw(prog_wall);
 		//done, unbind stuff
 		prog_wall->unbind();
 
@@ -529,13 +457,27 @@ public:
 		float aspect = width / (float)height;
 		glViewport(0, 0, width, height);
 
-		auto P = std::make_shared<MatrixStack>();
-		P->pushMatrix();
-		P->perspective(70., width, height, 0.1, 100.0f);
-		glm::mat4 M, V, S, T;
-		V = glm::mat4(1);
+		glm::vec3 mouse_pos = glm::vec3(mouse_posX, mouse_posY, 0);
+		mouse_pos.x /= width;
+		mouse_pos.y /= height;
+		mouse_pos.x *= 2;
+		mouse_pos.y *= 2;
+		mouse_pos.x -= 1;
+		mouse_pos.y -= 1;
+		mouse_pos.y *= -1;
+
+		glm::mat4 M, S, T;
 		// Clear framebuffer.
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		prog_mouse->bind();
+		// MOUSE
+		T = glm::translate(glm::mat4(1), mouse_pos);
+		S = glm::scale(glm::mat4(1), glm::vec3(0.025, 0.05, 0.05));
+		M = T * S;
+		glUniformMatrix4fv(prog_mouse->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		mouse->draw(prog_mouse);
+		prog_mouse->unbind();
 
 		prog_deferred->bind();
 
@@ -548,17 +490,6 @@ public:
 
 		glUniform3fv(prog_deferred->getUniform("campos"), 1, &mycam.pos.x);
 		glUniform1i(prog_deferred->getUniform("pass"), pass_number);
-		glm::vec3 mouse_pos = glm::vec3(mouse_posX ,mouse_posY,0);
-		
-		mouse_pos.x /= width;
-		mouse_pos.y /= height;
-		mouse_pos.x *= 2;
-		mouse_pos.y *= 2; 
-		mouse_pos.x -= 1;
-		mouse_pos.y -= 1;
-		mouse_pos.y *= -1;
-		cout << mouse_pos.x << endl;
-		glm::vec3 zero = vec3(0);
 		glUniform3fv(prog_deferred->getUniform("light_pos"), 1, &mouse_pos.x);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, FBOcol);
@@ -566,11 +497,11 @@ public:
 		glBindTexture(GL_TEXTURE_2D, FBOpos);
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, FBOnorm);
+
 		M = glm::scale(glm::mat4(1), glm::vec3(1, 1, 1));
 		T = glm::translate(glm::mat4(1), glm::vec3(-0.5, -0.5, -1));
 		M = mat4(1);
-		glUniformMatrix4fv(prog_deferred->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-		glUniformMatrix4fv(prog_deferred->getUniform("V"), 1, GL_FALSE, &V[0][0]);
+
 		glUniformMatrix4fv(prog_deferred->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		glBindVertexArray(VertexArrayIDBox);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -591,7 +522,7 @@ public:
 			pass_number = 1;
 		}
 
-		//for (int i = 0; i < 1024; i++) {
+		//for (int i = 0; i < ssbo_size; i++) {
 		//	cout << ssbo_CPUMEM.angle_list[i].x << " " << ssbo_CPUMEM.angle_list[i].y << " " << ssbo_CPUMEM.angle_list[i].z << " " << ssbo_CPUMEM.angle_list[i].w << endl;
 		//}
 	}
@@ -617,6 +548,8 @@ int main(int argc, char **argv)
 	windowManager->init(1920, 1920);
 	windowManager->setEventCallbacks(application);
 	application->windowManager = windowManager;
+
+	glfwSetInputMode(windowManager->getHandle(), GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
 
 	// This is the code that will likely change program to program as you
