@@ -1,7 +1,5 @@
 #version 430
 #extension GL_ARB_shader_storage_buffer_object : require
-//layout(local_size_x = 1024, local_size_y = 1) in;
-
 layout (std430, binding=0) volatile buffer shader_data
 {
 	ivec4 angle_list[1024];
@@ -29,7 +27,7 @@ void main()
 	vec3 texturecolor = texture(col_tex, fragTex).rgb;
 	vec3 normals = texture(norm_tex, fragTex).rgb;
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
-
+	
 	vec2 fragpos = world_pos.xy;
 	vec3 lightpos = light_pos;
 	// Light Direction
@@ -47,38 +45,43 @@ void main()
 		color.rgb = vec3(0,0,0);
 		return;
 	}
-	
 
 	// Map result from -1 -> 3 to 0 -> 1023
 	a += 1;
 	a *= 1023./4.;
 	a/=1023;
-	//a = map(a, 0, 1023, 0, 1);
-	color.rgb = vec3((b+1)/2.);
-	//color.rgb = texturecolor;
-	//color.rgb = vec3(map(dist, 0, 2.828, 0, 1));
+	color.rgb = vec3((b+1.)/2.);
 	color.a=1;
-	int distance_converted = int(map(dist, 0, 2.828, 0, 3000000));
+	int distance_converted = int(map(dist, 0, 2.828, 0, 10000));
 	float b_converted = (b+1.)/2.;
 	color.rgb = vec3(b_converted);
 	//return;
-
+	int bufferindex = int(b_converted*1023);
 	if (pass == 1){
 		// Convert float to int
-		int bufferindex = int(b*1024);
+		
 		atomicMin(angle_list[bufferindex].y, distance_converted);
+		memoryBarrier();
 	}
 
 	else{
-		int bufferindex = int(b*1024);
-		color.rgb = vec3(map(angle_list[bufferindex].y, 0, 3000000, 0, 1));
-		if (angle_list[bufferindex].y > 0){
+		
+		color.rgb = vec3(map(angle_list[bufferindex].y, 0, 10000, 0, 1));
+		if (angle_list[bufferindex].y > (distance_converted-500.00))
+		{
+		float d = abs(angle_list[bufferindex].y - distance_converted)/500.;
+		d=pow(1-d,2);
 			color.rgb = vec3(b);
+			color.rgb = vec3(1);
+			color.rgb = texturecolor *d;
 		}
 		else{
-			color.rgb = vec3(0);
+			color.rgb = vec3(0,0,0);
 		}
 	}
+	//color.rgb = texturecolor;
+
+	//color.rgb=vec3(1,0,0);
 
 }
 

@@ -81,6 +81,15 @@ public:
 		{
 			mycam.pos.x += 1;
 		}
+		if (key == GLFW_KEY_K && action == GLFW_PRESS)
+		{
+
+			glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_GPU_id);
+			GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+			int siz = sizeof(ssbo_data);
+			memcpy(&ssbo_CPUMEM, p, siz);
+			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+		}
 	}
 
 	void mouseCallback(GLFWwindow *window, int button, int action, int mods)
@@ -218,12 +227,12 @@ public:
 		float t = 1. / 100.;
 		GLfloat *rectangle_texture_coords = new GLfloat[12];
 		int texccount = 0;
-		rectangle_texture_coords[texccount++] = -1, rectangle_texture_coords[texccount++] = -1;
-		rectangle_texture_coords[texccount++] = 1, rectangle_texture_coords[texccount++] = -1;
-		rectangle_texture_coords[texccount++] = -1, rectangle_texture_coords[texccount++] = 1;
-		rectangle_texture_coords[texccount++] = 1, rectangle_texture_coords[texccount++] = -1;
+		rectangle_texture_coords[texccount++] = 0, rectangle_texture_coords[texccount++] = 0;
+		rectangle_texture_coords[texccount++] = 1, rectangle_texture_coords[texccount++] = 0;
+		rectangle_texture_coords[texccount++] = 0, rectangle_texture_coords[texccount++] = 1;
+		rectangle_texture_coords[texccount++] = 1, rectangle_texture_coords[texccount++] = 0;
 		rectangle_texture_coords[texccount++] = 1, rectangle_texture_coords[texccount++] = 1;
-		rectangle_texture_coords[texccount++] = -1, rectangle_texture_coords[texccount++] = 1;
+		rectangle_texture_coords[texccount++] = 0, rectangle_texture_coords[texccount++] = 1;
 
 		//actually memcopy the data - only do this once
 		glBufferData(GL_ARRAY_BUFFER, 12 * sizeof(float), rectangle_texture_coords, GL_STATIC_DRAW);
@@ -296,8 +305,8 @@ public:
 		glGenTextures(1, &FBOcol);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, FBOcol);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_BGRA, GL_FLOAT, NULL);
@@ -306,8 +315,8 @@ public:
 		glGenTextures(1, &FBOpos);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, FBOpos);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_BGRA, GL_FLOAT, NULL);
@@ -317,8 +326,8 @@ public:
 		glGenTextures(1, &FBOnorm);
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, FBOnorm);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_BGRA, GL_FLOAT, NULL);
@@ -410,18 +419,18 @@ public:
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		prog_mouse->bind();
-		glUniformMatrix4fv(prog_mouse->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+		//prog_mouse->bind();
+		//glUniformMatrix4fv(prog_mouse->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
 
-		// MOUSE
-		T = glm::translate(glm::mat4(1), glm::vec3((mouse_posX / width) * 5 - 2.5, (mouse_posY / height)*(-3) + 1.5, -3));
-		S = glm::scale(glm::mat4(1), glm::vec3(0.1, 0.1, 0.1));
-		M = T * S;
-		glUniformMatrix4fv(prog_mouse->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		glUniformMatrix4fv(prog_mouse->getUniform("V"), 1, GL_FALSE, &V[0][0]);
-		mouse->draw(prog_mouse);
+		//// MOUSE
+		//T = glm::translate(glm::mat4(1), glm::vec3((mouse_posX / width) * 5 - 2.5, (mouse_posY / height)*(-3) + 1.5, -3));
+		//S = glm::scale(glm::mat4(1), glm::vec3(0.1, 0.1, 0.1));
+		//M = T * S;
+		//glUniformMatrix4fv(prog_mouse->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		//glUniformMatrix4fv(prog_mouse->getUniform("V"), 1, GL_FALSE, &V[0][0]);
+		//mouse->draw(prog_mouse);
 
-		prog_mouse->unbind();
+		//prog_mouse->unbind();
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, wall_texture);
@@ -435,7 +444,7 @@ public:
 
 		// WALLS
 		//topleftwall
-		T = glm::translate(glm::mat4(1), glm::vec3((0 / width) * 2 - 1, (0 / height)*(-2) + 1, -3));
+		T = glm::translate(glm::mat4(1), glm::vec3(0.0,0.9,0));
 		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.1, 1));
 		M = T * S;
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
@@ -445,11 +454,20 @@ public:
 		wall->draw(prog_wall);
 
 
+		T = glm::translate(glm::mat4(1), glm::vec3(0.5, 0.0, 0));
+		S = glm::scale(glm::mat4(1), glm::vec3(0.5, 0.1, 1));
+		M = T * S;
+		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		glUniformMatrix4fv(prog_wall->getUniform("V"), 1, GL_FALSE, &V[0][0]);
+
+
+		wall->draw(prog_wall);
+
 		//toprightwall
 		T = glm::translate(glm::mat4(1), glm::vec3((width / width) * 2 - 1, (0 / height)*(-2) + 1, -3));
 		M = T * S;
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		wall->draw(prog_wall);
+		//wall->draw(prog_wall);
 
 		//sidewall
 		S = glm::scale(glm::mat4(1), glm::vec3(0.9, 0.1, 1));
@@ -457,7 +475,7 @@ public:
 		Rz = glm::rotate(glm::mat4(1), pihalf, glm::vec3(0, 0, -1));
 		M = T * Rz * S;
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		wall->draw(prog_wall);
+		//wall->draw(prog_wall);
 
 		//bottomleftwall
 		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.1, 1));
@@ -465,7 +483,7 @@ public:
 		Rz = glm::rotate(glm::mat4(1), pihalf * 2, glm::vec3(0, 0, 1));
 		M = T * Rz * S;
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		wall->draw(prog_wall);
+		//wall->draw(prog_wall);
 
 		//bottomrightwall
 		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.1, 1));
@@ -473,21 +491,21 @@ public:
 		Rz = glm::rotate(glm::mat4(1), pihalf * 2, glm::vec3(0, 0, 1));
 		M = T * Rz * S;
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		wall->draw(prog_wall);
+		//wall->draw(prog_wall);
 
 		//midwall1
 		T = glm::translate(glm::mat4(1), glm::vec3((0 / width) * 2 - 1, ((height / height)*(-2) + 1) / 2 - 0.1, -3));
 		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.1, 1));
 		M = T * S;
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		wall->draw(prog_wall);
+		//wall->draw(prog_wall);
 
 		//midwall2
 		T = glm::translate(glm::mat4(1), glm::vec3((0 / width) * 2 - 1, ((height / height)*(-2) + 1) / 2 + 0.1, -3));
 		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.1, 1));
 		M = T * Rz * S;
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		wall->draw(prog_wall);
+		//wall->draw(prog_wall);
 
 
 		//done, unbind stuff
@@ -530,7 +548,16 @@ public:
 
 		glUniform3fv(prog_deferred->getUniform("campos"), 1, &mycam.pos.x);
 		glUniform1i(prog_deferred->getUniform("pass"), pass_number);
-		glm::vec3 mouse_pos = glm::vec3((mouse_posX / width) * 5 - 2.5, (mouse_posY / height)*(-3) + 1.5, -3);
+		glm::vec3 mouse_pos = glm::vec3(mouse_posX ,mouse_posY,0);
+		
+		mouse_pos.x /= width;
+		mouse_pos.y /= height;
+		mouse_pos.x *= 2;
+		mouse_pos.y *= 2; 
+		mouse_pos.x -= 1;
+		mouse_pos.y -= 1;
+		mouse_pos.y *= -1;
+		cout << mouse_pos.x << endl;
 		glm::vec3 zero = vec3(0);
 		glUniform3fv(prog_deferred->getUniform("light_pos"), 1, &mouse_pos.x);
 		glActiveTexture(GL_TEXTURE0);
@@ -541,7 +568,7 @@ public:
 		glBindTexture(GL_TEXTURE_2D, FBOnorm);
 		M = glm::scale(glm::mat4(1), glm::vec3(1, 1, 1));
 		T = glm::translate(glm::mat4(1), glm::vec3(-0.5, -0.5, -1));
-		M = M * T;
+		M = mat4(1);
 		glUniformMatrix4fv(prog_deferred->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
 		glUniformMatrix4fv(prog_deferred->getUniform("V"), 1, GL_FALSE, &V[0][0]);
 		glUniformMatrix4fv(prog_deferred->getUniform("M"), 1, GL_FALSE, &M[0][0]);

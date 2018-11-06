@@ -44,8 +44,8 @@ out vec4 worldPos;
 void main()
 {
 	fragPos= (M * vec4(vertPos, 1.0)).xyz;
-	fragViewPos=V * M * vec4(vertPos, 1.0);
-	gl_Position = P * V * M * vec4(vertPos, 1.0);
+	fragViewPos= M * vec4(vertPos, 1.0);
+	gl_Position = M * vec4(vertPos, 1.0);
 	worldPos = M * vec4(vertPos, 1.0);
 	fragNor = (M * vec4(vertNor, 0.0)).xyz;
 	fragTex = vertTex;
