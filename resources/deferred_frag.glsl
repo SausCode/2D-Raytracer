@@ -17,6 +17,7 @@ layout(location = 2) uniform sampler2D norm_tex;
 // 1 for first, 2 for second
 uniform int pass;
 uniform vec3 light_pos;
+uniform vec3 campos;
 
 float map(float x, float in_min, float in_max, float out_min, float out_max)
 {
@@ -30,9 +31,6 @@ void main()
 	vec3 texturecolor = texture(col_tex, fragTex).rgb;
 	vec3 normals = texture(norm_tex, fragTex).rgb;
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
-	
-	color.rgb = normals;
-	return;
 
 	vec2 fragpos = world_pos.xy;
 	vec3 lightpos = light_pos;
@@ -64,17 +62,18 @@ void main()
 			d=pow(1-d,2);
 			color.rgb = texturecolor *d;
 
-//			//diffuse light
-//			vec3 lp = vec3(100,100,100);
-//			vec3 ld = normalize(lp - world_pos);
-//			float light = dot(ld,normals);	
-//			light = clamp(light,0,1);
-//			//specular light
-//			vec3 camvec = normalize(campos - world_pos);
-//			vec3 h = normalize(camvec+ld);
-//			float spec = pow(dot(h,normals),5);
-//			spec = clamp(spec,0,1)*0.3;
-//			color.rgb = texturecolor *light + vec3(1,1,1)*spec;
+			//diffuse light
+			//vec3 lp = vec3(100,100,100);
+			// vec3 lp = light_pos;
+			// vec3 ld = normalize(lp - world_pos);
+			// float light = dot(ld,normals);	
+			// light = clamp(light,0,1);
+			// //specular light
+			// vec3 camvec = normalize(campos - world_pos);
+			// vec3 h = normalize(camvec+ld);
+			// float spec = pow(dot(h,normals),5);
+			// spec = clamp(spec,0,1)*0.3;
+			// color.rgb = texturecolor *light + vec3(1,1,1)*spec;
 		}
 		else{
 			color.rgb = vec3(0,0,0);
