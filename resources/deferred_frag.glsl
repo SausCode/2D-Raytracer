@@ -31,6 +31,9 @@ void main()
 	vec3 normals = texture(norm_tex, fragTex).rgb;
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
 	
+	color.rgb = normals;
+	return;
+
 	vec2 fragpos = world_pos.xy;
 	vec3 lightpos = light_pos;
 	// Light Direction

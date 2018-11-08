@@ -137,8 +137,6 @@ public:
         prog_wall->addAttribute("vertPos");
         prog_wall->addAttribute("vertNor");
         prog_wall->addAttribute("vertTex");
-        prog_wall->addAttribute("vertTan");
-        prog_wall->addAttribute("vertBinorm");
         
         // Initialize the GLSL program.
         prog_mouse = make_shared<Program>();
@@ -423,39 +421,51 @@ public:
 		prog_wall->bind();
 
 		// WALLS
-		// Top Wall
-		T = glm::translate(glm::mat4(1), glm::vec3(0.0,0.9,0));
-		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.1, 1));
+		// Top Walls
+		T = glm::translate(glm::mat4(1), glm::vec3(0.5,0.9,0));
+		S = glm::scale(glm::mat4(1), glm::vec3(0.5, 0.1, 1));
+		M = T * S;
+		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		wall->draw(prog_wall);
+		T = glm::translate(glm::mat4(1), glm::vec3(-0.5, 0.9, 0));
 		M = T * S;
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		wall->draw(prog_wall);
 
 		// Mid wall 1
-		T = glm::translate(glm::mat4(1), glm::vec3(-.5, -0.0625, 0));
+		T = glm::translate(glm::mat4(1), glm::vec3(-.5, -0.1, 0));
 		S = glm::scale(glm::mat4(1), glm::vec3(0.5, 0.1, 1));
 		M = T * S;
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		wall->draw(prog_wall);
 
 		// Mid wall 2
-		T = glm::translate(glm::mat4(1), glm::vec3(-.5, 0.0625, 0));
+		T = glm::translate(glm::mat4(1), glm::vec3(-.5, 0.1, 0));
 		S = glm::scale(glm::mat4(1), glm::vec3(0.5, 0.1, 1));
 		R = glm::rotate(glm::mat4(1), pi, glm::vec3(0, 0, 1));
 		M = T * R * S;
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		wall->draw(prog_wall);
 
-		// Bottom Wall
-		T = glm::translate(glm::mat4(1), glm::vec3(0.0, -.9, 0));
-		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.1, 1));
+		// Bottom Walls
+		T = glm::translate(glm::mat4(1), glm::vec3(0.5, -.9, 0));
+		S = glm::scale(glm::mat4(1), glm::vec3(0.5, 0.1, 1));
+		M = T * R * S;
+		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		wall->draw(prog_wall);
+		T = glm::translate(glm::mat4(1), glm::vec3(-0.5, -.9, 0));
 		M = T * R * S;
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		wall->draw(prog_wall);
 
-		// Right Wall
-		T = glm::translate(glm::mat4(1), glm::vec3(0.9, 0, 0));
-		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.1, 1));
+		// Right Walls
+		T = glm::translate(glm::mat4(1), glm::vec3(0.9, 0.5, 0));
+		S = glm::scale(glm::mat4(1), glm::vec3(0.5, 0.1, 1));
 		R = glm::rotate(glm::mat4(1), -pi_half, glm::vec3(0, 0, 1));
+		M = T * R * S;
+		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		wall->draw(prog_wall);
+		T = glm::translate(glm::mat4(1), glm::vec3(0.9, -0.5, 0));
 		M = T * R * S;
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		wall->draw(prog_wall);
