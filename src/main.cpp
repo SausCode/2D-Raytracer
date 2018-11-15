@@ -169,6 +169,7 @@ public:
 		prog_deferred->init();
 		prog_deferred->addUniform("light_pos");
 		prog_deferred->addUniform("pass");
+		prog_deferred->addUniform("campos");
 		prog_deferred->addAttribute("vertPos");
 		prog_deferred->addAttribute("vertTex");
     }
@@ -522,6 +523,7 @@ public:
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_GPU_id);
 		glUniform1i(prog_deferred->getUniform("pass"), pass_number);
 		glUniform3fv(prog_deferred->getUniform("light_pos"), 1, &mouse_pos.x);
+		glUniform3fv(prog_deferred->getUniform("campos"), 1, &mycam.pos.x);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, FBOcol);
 		glActiveTexture(GL_TEXTURE1);
