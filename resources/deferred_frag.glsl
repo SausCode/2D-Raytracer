@@ -33,7 +33,7 @@ void main()
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
 	
 	color.rgb = normals;
-	return;
+	//return;
 
 	vec2 fragpos = world_pos.xy;
 	vec3 lightpos = light_pos;
