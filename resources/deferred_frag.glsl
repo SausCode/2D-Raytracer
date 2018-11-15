@@ -19,6 +19,46 @@ uniform int pass;
 uniform vec3 light_pos;
 uniform vec3 campos;
 
+vec3 voxel_transform(vec3 pos)
+{
+	//sponza is in the frame of [-1,1], and we have to map that to [0,255] in x, y, z
+	vec3 texpos = pos + vec3(1, 1, 1);	//[0,2]
+	texpos /= 2;
+	return texpos;
+}
+
+vec4 sampling(vec3 texposition, float mipmap)
+{
+	uint imip = uint(mipmap);
+	float linint = mipmap - float(imip);
+	vec4 colA = texture(col_tex, fragTex, imip);
+	vec4 colB = texture(col_tex, fragTex, imip + 1);
+	return mix(colA, colB, linint);
+}
+
+vec3 cone_tracing(vec3 conedirection, vec3 pixelpos)
+{
+	conedirection = normalize(conedirection);
+	float voxelSize = 2. / 256.;				//[-1,1] / resolution	
+	//pixelpos += conedirection*voxelSize;	//to get some distance to the pixel against self-inducing
+	vec4 trace = vec4(0);
+	float distanceFromConeOrigin = voxelSize * 2;
+	float coneHalfAngle = 0.471239; //27 degree
+	for (int i = 0; i < 10; i++)
+	{
+		float coneDiameter = 2 * tan(coneHalfAngle) * distanceFromConeOrigin;
+		float mip = log2(coneDiameter / voxelSize);
+		pixelpos = pixelpos + conedirection * distanceFromConeOrigin;
+		vec3 texpos = voxel_transform(pixelpos);
+		trace += sampling(texpos, mip);
+		if (trace.a > 0.7) {
+			break;
+		}
+		distanceFromConeOrigin += voxelSize;
+	}
+	return trace.rgb;
+}
+
 float map(float x, float in_min, float in_max, float out_min, float out_max)
 {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
@@ -58,9 +98,16 @@ void main()
 	else{
 		if (angle_list[bufferindex].y > (distance_converted-500.00))
 		{
-			float d = abs(angle_list[bufferindex].y - distance_converted)/500.;
-			d=pow(1-d,2);
-			color.rgb = texturecolor *d;
+			//float d = abs(angle_list[bufferindex].y - distance_converted)/500.;
+			//d=pow(1-d,2);
+			//color.rgb = texturecolor *d;
+
+
+			vec3 voxelcolor = cone_tracing(normals, world_pos);
+			color.rgb = voxelcolor;
+			return;
+			float magn = length(voxelcolor);
+			color.rgb = texturecolor + voxelcolor;
 
 			//diffuse light
 			//vec3 lp = vec3(100,100,100);

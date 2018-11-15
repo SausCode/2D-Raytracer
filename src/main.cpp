@@ -171,7 +171,7 @@ public:
 		if (!prog_deferred->init())
 		{
 			std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
-			exit(1);
+			//exit(1);
 		}
 
 		prog_deferred->init();
