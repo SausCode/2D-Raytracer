@@ -28,7 +28,7 @@ void main()
 {
 	color.a = 1;
 
-	vec3 texturecolor = texture(col_tex, fragTex).rgb;
+	vec3 texturecolor = texture(col_tex, fragTex, 0).rgb;
 	vec3 normals = texture(norm_tex, fragTex).rgb;
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
 	
@@ -66,10 +66,10 @@ void main()
 			color.rgb = texturecolor *d;
 
 			//diffuse light
-			vec3 lp = vec3(100,100,100);
-			vec3 ld = normalize(lp - world_pos);
-			float light = dot(ld,normals);	
-			light = clamp(light,0,1);
+			//vec3 lp = vec3(100,100,100);
+			//vec3 ld = normalize(lp - world_pos);
+			//float light = dot(ld,normals);	
+			//light = clamp(light,0,1);
 			//specular light
 			//vec3 camvec = normalize(campos - world_pos);
 			//vec3 h = normalize(camvec+ld);
