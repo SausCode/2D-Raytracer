@@ -26,6 +26,14 @@ using namespace glm;
 
 #define ssbo_size 2048
 
+#ifdef __WIN32
+	// Use dedicated GPU on windows
+	extern "C"
+	{
+	  __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
+	}
+#endif
+
 class ssbo_data
 {
 public:
@@ -129,7 +137,7 @@ public:
         if (! prog_wall->init())
         {
             std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
-			//exit(1);
+			exit(1);
         }
 
         prog_wall->init();
@@ -168,6 +176,7 @@ public:
 
 		prog_deferred->init();
 		prog_deferred->addUniform("light_pos");
+		prog_deferred->addUniform("campos");
 		prog_deferred->addUniform("pass");
 		prog_deferred->addUniform("campos");
 		prog_deferred->addAttribute("vertPos");
