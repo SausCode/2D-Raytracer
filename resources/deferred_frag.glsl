@@ -18,10 +18,23 @@ layout(location = 2) uniform sampler2D norm_tex;
 uniform int pass;
 uniform vec3 light_pos;
 uniform vec3 campos;
+uniform int screen_width;
+uniform int screen_height;
 
 float map(float x, float in_min, float in_max, float out_min, float out_max)
 {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+vec2 fragTopAndBottomAngles(vec2 fragpos, vec2 lightpos){
+	vec2 lower_left = fragpos;
+	vec2 lower_right = vec2(fragpos.x+(1.0f/screen_width), fragpos.y);
+	vec2 upper_right = vec2(fragpos.x+(1.0f/screen_width), fragpos.y+(1.0f/screen_height));
+	vec2 upper_left = vec2(fragpos.x, fragpos.y+(1.0f/screen_height));
+
+
+
+	return vec2(1.0f, 1.0f);
 }
 
 void main()
@@ -33,7 +46,7 @@ void main()
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
 	
 	color.rgb = normals;
-	return;
+	//return;
 
 	vec2 fragpos = world_pos.xy;
 	vec3 lightpos = light_pos;
@@ -66,17 +79,17 @@ void main()
 			color.rgb = texturecolor *d;
 
 			//diffuse light
-			//vec3 lp = vec3(100,100,100);
-			//vec3 ld = normalize(lp - world_pos);
-			//float light = dot(ld,normals);	
-			//light = clamp(light,0,1);
+			vec3 lp = vec3(100,100,100);
+			vec3 ld = normalize(lp - world_pos);
+			float light = dot(ld,normals);	
+			light = clamp(light,0,1);
 			//specular light
 			//vec3 camvec = normalize(campos - world_pos);
 			//vec3 h = normalize(camvec+ld);
 			//float spec = pow(dot(h,normals),5);
 			//spec = clamp(spec,0,1)*0.3;
 			//color.rgb = texturecolor * d * light + vec3(1,1,1)*spec;
-			//color.rgb = texturecolor *d*light;
+			color.rgb = texturecolor *d*light;
 
 		}
 		else{

@@ -179,6 +179,8 @@ public:
 		prog_deferred->addUniform("campos");
 		prog_deferred->addUniform("pass");
 		prog_deferred->addUniform("campos");
+		prog_deferred->addUniform("screen_width");
+		prog_deferred->addUniform("screen_height");
 		prog_deferred->addAttribute("vertPos");
 		prog_deferred->addAttribute("vertTex");
     }
@@ -533,6 +535,8 @@ public:
 		glUniform1i(prog_deferred->getUniform("pass"), pass_number);
 		glUniform3fv(prog_deferred->getUniform("light_pos"), 1, &mouse_pos.x);
 		glUniform3fv(prog_deferred->getUniform("campos"), 1, &mycam.pos.x);
+		glUniform1i(prog_deferred->getUniform("screen_width"), width);
+		glUniform1i(prog_deferred->getUniform("screen_height"), height);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, FBOcol);
 		glActiveTexture(GL_TEXTURE1);
