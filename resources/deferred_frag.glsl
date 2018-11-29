@@ -26,15 +26,36 @@ float map(float x, float in_min, float in_max, float out_min, float out_max)
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-vec2 fragTopAndBottomAngles(vec2 fragpos, vec2 lightpos){
+vec2 fragTopAndBottomAngles(vec2 fragpos, vec3 lightpos){
 	vec2 lower_left = fragpos;
 	vec2 lower_right = vec2(fragpos.x+(1.0f/screen_width), fragpos.y);
 	vec2 upper_right = vec2(fragpos.x+(1.0f/screen_width), fragpos.y+(1.0f/screen_height));
 	vec2 upper_left = vec2(fragpos.x, fragpos.y+(1.0f/screen_height));
 
+	float min, max;
+	vec2 pos[4] = vec2[](lower_left, lower_right, upper_right, upper_left);
+	float angles[4];
 
+	for(int i=0; i<4; i++){
+		// Light Direction
+		vec2 ld = normalize((pos[i]).xy-lightpos.xy);
+		// Angle between fragment and light
+		float angle = dot(ld.xy, vec2(1,0));
 
-	return vec2(1.0f, 1.0f);
+		angles[i] = angle;
+	}
+
+	min = angles[0];
+	max = angles[0];
+
+	for(int i=1; i<3; i++){
+		if(angles[i]<min)
+			min = angles[i];
+		if(angles[i]>max)
+			max = angles[i];
+	}
+
+	return vec2(min, max);
 }
 
 void main()
@@ -50,6 +71,11 @@ void main()
 
 	vec2 fragpos = world_pos.xy;
 	vec3 lightpos = light_pos;
+
+	vec2 angle_range = fragTopAndBottomAngles(fragpos, lightpos);
+	float min_angle = angle_range.x;
+	float max_angle = angle_range.y;
+
 	// Light Direction
 	vec2 ld = normalize(fragpos.xy-lightpos.xy);
 	// Angle between fragment and light
