@@ -141,12 +141,8 @@
   <ItemGroup>
     <None Include="..\resources\deferred_frag.glsl" />
     <None Include="..\resources\deferred_vert.glsl" />
-    <None Include="..\resources\frag_nolight.glsl" />
     <None Include="..\resources\mouse_frag.glsl" />
     <None Include="..\resources\mouse_vert.glsl" />
-    <None Include="..\resources\vert.glsl" />
-    <None Include="..\resources\vox_frag.glsl" />
-    <None Include="..\resources\vox_vert.glsl" />
     <None Include="..\resources\wall_frag.glsl" />
     <None Include="..\resources\wall_vert.glsl" />
   </ItemGroup>

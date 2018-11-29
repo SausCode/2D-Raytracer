@@ -49,17 +49,5 @@
     <None Include="..\resources\wall_vert.glsl">
       <Filter>shader</Filter>
     </None>
-    <None Include="..\resources\frag_nolight.glsl">
-      <Filter>shader</Filter>
-    </None>
-    <None Include="..\resources\vox_frag.glsl">
-      <Filter>shader</Filter>
-    </None>
-    <None Include="..\resources\vox_vert.glsl">
-      <Filter>shader</Filter>
-    </None>
-    <None Include="..\resources\vert.glsl">
-      <Filter>shader</Filter>
-    </None>
   </ItemGroup>
 </Project>

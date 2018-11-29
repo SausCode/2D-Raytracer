@@ -48,7 +48,7 @@ public:
 	WindowManager * windowManager = nullptr;
 
 	// Our shader program
-    std::shared_ptr<Program> prog_wall, prog_mouse, prog_deferred, voxprog, prog2;
+    std::shared_ptr<Program> prog_wall, prog_mouse, prog_deferred;
  
 	// Shape to be used (from obj file)
     shared_ptr<Shape> wall, mouse;
@@ -61,9 +61,6 @@ public:
 
 	// textures for position, color, and normal
 	GLuint fb, depth_rb, FBOpos, FBOcol, FBOnorm;
-	GLuint FBOvoxelize, FBOvoxelizeTex, FBOvoxelizeDepth;
-	GLuint voxeltexture[7];
-	GLuint CSmipmap;
 
 	// Contains vertex information for OpenGL
 	GLuint VertexArrayID;
@@ -78,10 +75,6 @@ public:
 
 	ssbo_data ssbo_CPUMEM;
 	GLuint ssbo_GPU_id;
-
-	bool show_shadowmap = false;
-
-	int key_n = 0, key_m = 0;
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
@@ -102,11 +95,6 @@ public:
 		{
 			get_SSBO_back();
 		}
-
-		if (key == GLFW_KEY_N && action == GLFW_PRESS)		key_n = 1;
-		if (key == GLFW_KEY_N && action == GLFW_RELEASE)	key_n = 0;
-		if (key == GLFW_KEY_M && action == GLFW_PRESS)		key_m = 1;
-		if (key == GLFW_KEY_M && action == GLFW_RELEASE)	key_m = 0;
 	}
 
 	void mouseCallback(GLFWwindow *window, int button, int action, int mods)
@@ -119,52 +107,6 @@ public:
 	{
 		glViewport(0, 0, width, height);
 	}
-
-
-	//-------------------------------------------
-	void init_voxelize_texture_fbo()
-	{
-		int width, height;
-		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
-
-		glBindTexture(GL_TEXTURE_2D, FBOvoxelizeTex);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		//NULL means reserve texture memory, but texels are undefined
-		//**** Tell OpenGL to reserve level 0
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
-		//You must reserve memory for other mipmaps levels as well either by making a series of calls to
-		//glTexImage2D or use glGenerateMipmapEXT(GL_TEXTURE_2D).
-		//Here, we'll use :
-		glGenerateMipmap(GL_TEXTURE_2D);
-		//-------------------------
-		glGenFramebuffers(1, &FBOvoxelize);
-		glBindFramebuffer(GL_FRAMEBUFFER, FBOvoxelize);
-		//Attach 2D texture to this FBO
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, FBOvoxelizeTex, 0);
-		//-------------------------
-		glGenRenderbuffers(1, &FBOvoxelizeDepth);
-		glBindRenderbuffer(GL_RENDERBUFFER, FBOvoxelizeDepth);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height);
-		//-------------------------
-		//Attach depth buffer to FBO
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, FBOvoxelizeDepth);
-		//-------------------------
-		//Does the GPU support current FBO configuration?
-	//	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	//	switch (status)
-	//	{
-	//	case GL_FRAMEBUFFER_COMPLETE:
-	//		cout << "status framebuffer: good" << std::endl;
-	//		break;
-	//	default:
-	//		cout << "status framebuffer: bad!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-	//	}
-	//	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	}
-
 
 	void init(const std::string& resourceDirectory)
 	{
@@ -236,47 +178,9 @@ public:
 		prog_deferred->addUniform("light_pos");
 		prog_deferred->addUniform("campos");
 		prog_deferred->addUniform("pass");
+		prog_deferred->addUniform("campos");
 		prog_deferred->addAttribute("vertPos");
 		prog_deferred->addAttribute("vertTex");
-
-		/*
-		// Initialize the GLSL program.
-		voxprog = make_shared<Program>();
-		voxprog->setVerbose(true);
-		voxprog->setShaderNames(resourceDirectory + "/vox_vert.glsl", resourceDirectory + "/vox_frag.glsl");
-		if (!voxprog->init())
-		{
-			std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
-			exit(1);
-		}
-		voxprog->init();
-		voxprog->addUniform("P");
-		voxprog->addUniform("V");
-		voxprog->addUniform("lightSpace");
-		voxprog->addUniform("M");
-		voxprog->addUniform("campos");
-		voxprog->addUniform("lightpos");
-		voxprog->addUniform("lightdir");
-		voxprog->addAttribute("vertPos");
-		voxprog->addAttribute("vertNor");
-		voxprog->addAttribute("vertTex");
-		*/
-
-		prog2 = make_shared<Program>();
-		prog2->setVerbose(true);
-		prog2->setShaderNames(resourceDirectory + "/vert.glsl", resourceDirectory + "/frag_nolight.glsl");
-		if (!prog2->init())
-		{
-			std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
-			exit(1);
-		}
-		prog2->init();
-		prog2->addUniform("P");
-		prog2->addUniform("V");
-		prog2->addUniform("M");
-		prog2->addAttribute("vertPos");
-		prog2->addAttribute("vertTex");
-		prog2->addUniform("manualmipmaplevel");
     }
     
     void initGeom(const std::string& resourceDirectory)
@@ -440,25 +344,10 @@ public:
 		int Tex1Loc = glGetUniformLocation(prog_deferred->pid, "col_tex");
 		int Tex2Loc = glGetUniformLocation(prog_deferred->pid, "pos_tex");
 		int Tex3Loc = glGetUniformLocation(prog_deferred->pid, "norm_tex");
-		glUseProgram(prog_deferred->pid);
 
 		glUniform1i(Tex1Loc, 0);
 		glUniform1i(Tex2Loc, 1);
 		glUniform1i(Tex3Loc, 2);
-
-
-		GLuint Tex0Location = glGetUniformLocation(prog2->pid, "tex"); //tex sampler in the fragment shader
-		Tex1Location = glGetUniformLocation(prog2->pid, "texnorm");
-		Tex2Location = glGetUniformLocation(prog2->pid, "texpos");
-		glUseProgram(prog2->pid);
-		glUniform1i(Tex0Location, 0);
-		glUniform1i(Tex1Location, 1);
-		glUniform1i(Tex2Location, 2);
-
-		/*
-		glGenTextures(1, &FBOvoxelizeTex);
-		init_voxelize_texture_fbo();
-		*/
 
 		GLenum status;
 		status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -612,13 +501,6 @@ public:
 		float aspect = width / (float)height;
 		glViewport(0, 0, width, height);
 
-		auto P = std::make_shared<MatrixStack>();
-		P->pushMatrix();
-		P->perspective(70., width, height, 0.1, 100.0f);
-		glm::mat4 M, V, S, T;
-
-		V = glm::mat4(1);
-
 		glm::vec3 mouse_pos = glm::vec3(mouse_posX, mouse_posY, 0);
 		mouse_pos.x /= width;
 		mouse_pos.y /= height;
@@ -628,6 +510,7 @@ public:
 		mouse_pos.y -= 1;
 		mouse_pos.y *= -1;
 
+		glm::mat4 M, S, T;
 		// Clear framebuffer.
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -639,43 +522,6 @@ public:
 		glUniformMatrix4fv(prog_mouse->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		mouse->draw(prog_mouse);
 		prog_mouse->unbind();
-
-		prog2->bind();
-		glActiveTexture(GL_TEXTURE0);
-		// Debug, shows shadow map when 'y' is pressed
-		//show_shadowmap ? glBindTexture(GL_TEXTURE_2D, FBOpos) : glBindTexture(GL_TEXTURE_2D, FBOtex);
-
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, FBOnorm);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, FBOpos);
-		
-		/*
-		glBindTextureUnit(3, voxeltexture[0]);
-		glBindTextureUnit(4, voxeltexture[1]);
-		glBindTextureUnit(5, voxeltexture[2]);
-		glBindTextureUnit(6, voxeltexture[3]);
-		glBindTextureUnit(7, voxeltexture[4]);
-		glBindTextureUnit(8, voxeltexture[5]);
-		glBindTextureUnit(9, voxeltexture[6]);
-		//glBindImageTexture(2, voxeltexture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA16F);
-		*/
-
-		M = glm::scale(glm::mat4(1), glm::vec3(1.2, 1, 1)) * glm::translate(glm::mat4(1), glm::vec3(-0.5, -0.5, -1));
-		glUniformMatrix4fv(prog2->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-		glUniformMatrix4fv(prog2->getUniform("V"), 1, GL_FALSE, &V[0][0]);
-		glUniformMatrix4fv(prog2->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		static float mml = 0;
-		if (key_n == 1)	mml -= 0.5;
-		if (key_m == 1)	mml += 0.5;
-		if (mml < 0)mml = 0;
-		if (mml > 8)mml = 8;
-		glUniform1f(prog2->getUniform("manualmipmaplevel"), mml);
-
-		glBindVertexArray(VertexArrayIDBox);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-
-		prog2->unbind();
 
 		prog_deferred->bind();
 		// Get SSBO ready to send
