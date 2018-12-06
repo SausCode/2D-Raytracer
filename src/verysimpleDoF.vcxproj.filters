@@ -49,5 +49,11 @@
     <None Include="..\resources\wall_vert.glsl">
       <Filter>shader</Filter>
     </None>
+    <None Include="..\resources\raytrace_frag.glsl">
+      <Filter>shader</Filter>
+    </None>
+    <None Include="..\resources\raytrace_vert.glsl">
+      <Filter>shader</Filter>
+    </None>
   </ItemGroup>
 </Project>

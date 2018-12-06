@@ -48,7 +48,7 @@ public:
 	WindowManager * windowManager = nullptr;
 
 	// Our shader program
-    std::shared_ptr<Program> prog_wall, prog_mouse, prog_deferred;
+    std::shared_ptr<Program> prog_wall, prog_mouse, prog_deferred, prog_raytrace;
  
 	// Shape to be used (from obj file)
     shared_ptr<Shape> wall, mouse;
@@ -171,15 +171,32 @@ public:
 		if (!prog_deferred->init())
 		{
 			std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
-			//exit(1);
+			exit(1);
 		}
 
 		prog_deferred->init();
 		prog_deferred->addUniform("light_pos");
 		prog_deferred->addUniform("campos");
 		prog_deferred->addUniform("pass");
+		prog_deferred->addUniform("screen_width");
+		prog_deferred->addUniform("screen_height");
 		prog_deferred->addAttribute("vertPos");
 		prog_deferred->addAttribute("vertTex");
+
+		// Initialize the GLSL program.
+		prog_raytrace = make_shared<Program>();
+		prog_raytrace->setVerbose(true);
+		prog_raytrace->setShaderNames(resourceDirectory + "/raytrace_vert.glsl", resourceDirectory + "/raytrace_frag.glsl");
+
+		if (!prog_raytrace->init())
+		{
+			std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
+			exit(1);
+		}
+
+		prog_raytrace->init();
+		prog_raytrace->addAttribute("vertPos");
+		prog_raytrace->addAttribute("vertTex");
     }
     
     void initGeom(const std::string& resourceDirectory)
@@ -359,6 +376,14 @@ public:
 			cout << "status framebuffer: bad!!!!!!!!!!!!!!!!!!!!!!!!!";
 		}
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		glUseProgram(prog_raytrace->pid);
+		Tex1Loc = glGetUniformLocation(prog_raytrace->pid, "col_tex");
+		Tex2Loc = glGetUniformLocation(prog_raytrace->pid, "pos_tex");
+		Tex3Loc = glGetUniformLocation(prog_raytrace->pid, "norm_tex");
+		glUniform1i(Tex1Loc, 0);
+		glUniform1i(Tex2Loc, 1);
+		glUniform1i(Tex3Loc, 2);
     }
 
 	void create_SSBO() {
@@ -492,8 +517,17 @@ public:
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 
-	void render_to_screen()
+	void render_deferred()
 	{
+		if (pass_number == 2) {
+			glBindFramebuffer(GL_FRAMEBUFFER, fb);
+			GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+			glDrawBuffers(3, buffers);
+		}
+
+		glClearColor(0.0, 0.0, 0.0, 0.0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 		// Get current frame buffer size.
 		int width, height;
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
@@ -532,6 +566,8 @@ public:
 		glUniform1i(prog_deferred->getUniform("pass"), pass_number);
 		glUniform3fv(prog_deferred->getUniform("light_pos"), 1, &mouse_pos.x);
 		glUniform3fv(prog_deferred->getUniform("campos"), 1, &mycam.pos.x);
+		glUniform1i(prog_deferred->getUniform("screen_width"), width);
+		glUniform1i(prog_deferred->getUniform("screen_height"), height);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, FBOcol);
 		glActiveTexture(GL_TEXTURE1);
@@ -542,12 +578,39 @@ public:
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		prog_deferred->unbind();
 
-		if (pass_number == 1) {
-			pass_number = 2;
+		if (pass_number == 2) {
+			// Save output to framebuffer
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glBindTexture(GL_TEXTURE_2D, FBOcol);
+			glGenerateMipmap(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, FBOpos);
+			glGenerateMipmap(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, FBOnorm);
+			glGenerateMipmap(GL_TEXTURE_2D);
 		}
-		else {
-			pass_number = 1;
-		}
+	}
+
+	void render_to_screen()
+	{
+		// Get current frame buffer size.
+		int width, height;
+		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
+		float aspect = width / (float)height;
+		glViewport(0, 0, width, height);
+		// Clear framebuffer.
+		glClearColor(0.0, 0.0, 0.0, 0.0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		prog_raytrace->bind();
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, FBOcol);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, FBOpos);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, FBOnorm);
+		glBindVertexArray(VertexArrayIDBox);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		prog_raytrace->unbind();
 	}
 };
 
@@ -587,7 +650,10 @@ int main(int argc, char **argv)
 	{
 		application->create_SSBO();
 		application->render_to_texture();
-		application->render_to_screen();
+		application->pass_number = 1;
+		application->render_deferred();
+		application->pass_number = 2;
+		application->render_deferred();
 		application->render_to_screen();
 
 		// Swap front and back buffers.
