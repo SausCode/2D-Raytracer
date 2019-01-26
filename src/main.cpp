@@ -76,6 +76,8 @@ public:
 	ssbo_data ssbo_CPUMEM;
 	GLuint ssbo_GPU_id;
 
+	glm::vec3 mouse_pos;
+
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
 		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
@@ -370,17 +372,16 @@ public:
 		switch (status)
 		{
 		case GL_FRAMEBUFFER_COMPLETE:
-			cout << "status framebuffer: good";
+			cout << "status framebuffer: good" << endl;
 			break;
 		default:
-			cout << "status framebuffer: bad!!!!!!!!!!!!!!!!!!!!!!!!!";
+			cout << "status framebuffer: bad" << endl;
 		}
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 		glUseProgram(prog_raytrace->pid);
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
 		glGenFramebuffers(1, &fb2);
-		glActiveTexture(GL_TEXTURE0);
 		glBindFramebuffer(GL_FRAMEBUFFER, fb2);
 
 		// Generate Color Texture
@@ -423,15 +424,17 @@ public:
 		Tex2Loc = glGetUniformLocation(prog_raytrace->pid, "pos_tex");
 		Tex3Loc = glGetUniformLocation(prog_raytrace->pid, "norm_tex");
 		glUniform1i(Tex1Loc, 0);
+		glUniform1i(Tex2Loc, 1);
+		glUniform1i(Tex3Loc, 2);
 
 		status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 		switch (status)
 		{
 		case GL_FRAMEBUFFER_COMPLETE:
-			cout << "status framebuffer: good";
+			cout << "status framebuffer: good" << endl;
 			break;
 		default:
-			cout << "status framebuffer: bad!!!!!!!!!!!!!!!!!!!!!!!!!";
+			cout << "status framebuffer: bad" << endl;
 		}
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -480,6 +483,20 @@ public:
 		for (int i = 0; i < ssbo_size; i++) {
 			cout << ssbo_CPUMEM.angle_list[i].x << " " << ssbo_CPUMEM.angle_list[i].y << " " << ssbo_CPUMEM.angle_list[i].z << " " << ssbo_CPUMEM.angle_list[i].w << endl;
 		}
+	}
+
+	void update_mouse()
+	{
+		int width, height;
+		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
+		mouse_pos = glm::vec3(mouse_posX, mouse_posY, 0);
+		mouse_pos.x /= width;
+		mouse_pos.y /= height;
+		mouse_pos.x *= 2;
+		mouse_pos.y *= 2;
+		mouse_pos.x -= 1;
+		mouse_pos.y -= 1;
+		mouse_pos.y *= -1;
 	}
 
 	void render_to_texture() // aka render to framebuffer
@@ -582,11 +599,6 @@ public:
 			GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
 			glDrawBuffers(3, buffers);
 		}
-		else {
-			//glBindFramebuffer(GL_FRAMEBUFFER, fb);
-			//GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-			//glDrawBuffers(3, buffers);
-		}
 
 		glClearColor(0.0, 0.0, 0.0, 0.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -596,28 +608,6 @@ public:
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
 		float aspect = width / (float)height;
 		glViewport(0, 0, width, height);
-
-		glm::vec3 mouse_pos = glm::vec3(mouse_posX, mouse_posY, 0);
-		mouse_pos.x /= width;
-		mouse_pos.y /= height;
-		mouse_pos.x *= 2;
-		mouse_pos.y *= 2;
-		mouse_pos.x -= 1;
-		mouse_pos.y -= 1;
-		mouse_pos.y *= -1;
-
-		glm::mat4 M, S, T;
-		// Clear framebuffer.
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		prog_mouse->bind();
-		// MOUSE
-		T = glm::translate(glm::mat4(1), mouse_pos);
-		S = glm::scale(glm::mat4(1), glm::vec3(0.025, 0.05, 0.05));
-		M = T * S;
-		glUniformMatrix4fv(prog_mouse->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		mouse->draw(prog_mouse);
-		prog_mouse->unbind();
 
 		prog_deferred->bind();
 		// Get SSBO ready to send
@@ -663,6 +653,17 @@ public:
 		// Clear framebuffer.
 		glClearColor(0.0, 0.0, 0.0, 0.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		// Draw cursor
+		glm::mat4 M, S, T;
+		prog_mouse->bind();
+		// MOUSE
+		T = glm::translate(glm::mat4(1), mouse_pos);
+		S = glm::scale(glm::mat4(1), glm::vec3(0.025, 0.05, 0.05));
+		M = T * S;
+		glUniformMatrix4fv(prog_mouse->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		mouse->draw(prog_mouse);
+		prog_mouse->unbind();
 
 		prog_raytrace->bind();
 		glActiveTexture(GL_TEXTURE0);
@@ -711,6 +712,7 @@ int main(int argc, char **argv)
 	// Loop until the user closes the window.
 	while (! glfwWindowShouldClose(windowManager->getHandle()))
 	{
+		application->update_mouse();
 		application->create_SSBO();
 		application->render_to_texture();
 		application->pass_number = 1;
@@ -718,7 +720,6 @@ int main(int argc, char **argv)
 		application->pass_number = 2;
 		application->render_deferred();
 		application->render_to_screen();
-
 		// Swap front and back buffers.
 		glfwSwapBuffers(windowManager->getHandle());
 		// Poll for and process events.

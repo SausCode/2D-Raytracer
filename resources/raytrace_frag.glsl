@@ -27,7 +27,7 @@ vec3 cone_tracing(vec3 conedirection, vec3 pixelpos)
 {
 	conedirection = normalize(conedirection);
 	float voxelSize = 2. / 256.;				//[-1,1] / resolution	
-												//pixelpos += conedirection*voxelSize;	//to get some distance to the pixel against self-inducing
+	pixelpos += conedirection*voxelSize;	//to get some distance to the pixel against self-inducing
 	vec4 trace = vec4(0);
 	float distanceFromConeOrigin = voxelSize * 2;
 	float coneHalfAngle = 0.471239; //27 degree
@@ -56,5 +56,8 @@ void main()
 	float magn = length(voxelcolor);
 	color.rgb = texturecolor + voxelcolor;
 
+	//color.rgb = texturecolor;
+	//color.rgb = voxelcolor;
+	//color.rgb = normals;
 	//color.rgb = world_pos;
 }
