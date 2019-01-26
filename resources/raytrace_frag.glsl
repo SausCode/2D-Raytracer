@@ -56,5 +56,5 @@ void main()
 	float magn = length(voxelcolor);
 	color.rgb = texturecolor + voxelcolor;
 
-	//color.rgb = normals;
+	//color.rgb = world_pos;
 }
