@@ -423,9 +423,11 @@ public:
 		Tex1Loc = glGetUniformLocation(prog_raytrace->pid, "col_tex");
 		Tex2Loc = glGetUniformLocation(prog_raytrace->pid, "pos_tex");
 		Tex3Loc = glGetUniformLocation(prog_raytrace->pid, "norm_tex");
+		int Tex4Loc = glGetUniformLocation(prog_raytrace->pid, "wall_tex");
 		glUniform1i(Tex1Loc, 0);
 		glUniform1i(Tex2Loc, 1);
 		glUniform1i(Tex3Loc, 2);
+		glUniform1i(Tex4Loc, 3);
 
 		status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 		switch (status)
@@ -672,6 +674,8 @@ public:
 		glBindTexture(GL_TEXTURE_2D, FBOpos2);
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, FBOnorm2);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, FBOcol);
 		glBindVertexArray(VertexArrayIDBox);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		prog_raytrace->unbind();
