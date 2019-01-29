@@ -1,7 +1,7 @@
 /* Lab 6 base code - transforms using local matrix functions
-	to be written by students -
-	based on lab 5 by CPE 471 Cal Poly Z. Wood + S. Sueda
-	& Ian Dunn, Christian Eckhardt
+to be written by students -
+based on lab 5 by CPE 471 Cal Poly Z. Wood + S. Sueda
+& Ian Dunn, Christian Eckhardt
 */
 #include <iostream>
 #include <glad/glad.h>
@@ -27,11 +27,11 @@ using namespace glm;
 #define ssbo_size 2048
 
 #ifdef __WIN32
-	// Use dedicated GPU on windows
-	extern "C"
-	{
-	  __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
-	}
+// Use dedicated GPU on windows
+extern "C"
+{
+	__declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
+}
 #endif
 
 class ssbo_data
@@ -44,15 +44,15 @@ class Application : public EventCallbacks
 {
 
 public:
- 
+
 	WindowManager * windowManager = nullptr;
 
 	// Our shader program
-    std::shared_ptr<Program> prog_wall, prog_mouse, prog_deferred, prog_raytrace;
- 
+	std::shared_ptr<Program> prog_wall, prog_mouse, prog_deferred, prog_raytrace;
+
 	// Shape to be used (from obj file)
-    shared_ptr<Shape> wall, mouse;
- 
+	shared_ptr<Shape> wall, mouse;
+
 	//camera
 	camera mycam;
 
@@ -69,8 +69,8 @@ public:
 	GLuint VertexBufferID;
 
 	GLuint VertexArrayIDBox, VertexBufferIDBox, VertexBufferTex;
-    
-    double mouse_posX, mouse_posY;
+
+	double mouse_posX, mouse_posY;
 	int pass_number = 1;
 
 	ssbo_data ssbo_CPUMEM;
@@ -78,13 +78,18 @@ public:
 
 	glm::vec3 mouse_pos;
 
+	float voxeltoggle = 0;
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
 		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		{
 			glfwSetWindowShouldClose(window, GL_TRUE);
 		}
-
+		if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE)
+		{
+			if (voxeltoggle > 0.5)voxeltoggle = 0;
+			else voxeltoggle = 1;
+		}
 		if (key == GLFW_KEY_D && action == GLFW_PRESS)
 		{
 			mycam.pos.x -= 1;
@@ -128,42 +133,42 @@ public:
 		glEnable(GL_BLEND);
 		//next function defines how to mix the background color with the transparent pixel in the foreground. 
 		//This is the standard:
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        // Initialize the GLSL program.
-        prog_wall = make_shared<Program>();
-        //prog_wall->setVerbose(true);
-        prog_wall->setVerbose(false);
-        prog_wall->setShaderNames(resourceDirectory + "/wall_vert.glsl", resourceDirectory + "/wall_frag.glsl");
+		// Initialize the GLSL program.
+		prog_wall = make_shared<Program>();
+		//prog_wall->setVerbose(true);
+		prog_wall->setVerbose(false);
+		prog_wall->setShaderNames(resourceDirectory + "/wall_vert.glsl", resourceDirectory + "/wall_frag.glsl");
 
-        if (! prog_wall->init())
-        {
-            std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
+		if (!prog_wall->init())
+		{
+			std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
 			exit(1);
-        }
+		}
 
-        prog_wall->init();
-        prog_wall->addUniform("M");
-        prog_wall->addAttribute("vertPos");
-        prog_wall->addAttribute("vertNor");
-        prog_wall->addAttribute("vertTex");
-        
-        // Initialize the GLSL program.
-        prog_mouse = make_shared<Program>();
-        prog_mouse->setVerbose(false);
-        prog_mouse->setShaderNames(resourceDirectory + "/mouse_vert.glsl", resourceDirectory + "/mouse_frag.glsl");
+		prog_wall->init();
+		prog_wall->addUniform("M");
+		prog_wall->addAttribute("vertPos");
+		prog_wall->addAttribute("vertNor");
+		prog_wall->addAttribute("vertTex");
 
-        if (! prog_mouse->init())
-        {
-            std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
+		// Initialize the GLSL program.
+		prog_mouse = make_shared<Program>();
+		prog_mouse->setVerbose(false);
+		prog_mouse->setShaderNames(resourceDirectory + "/mouse_vert.glsl", resourceDirectory + "/mouse_frag.glsl");
+
+		if (!prog_mouse->init())
+		{
+			std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
 			exit(1);
-        }
+		}
 
-        prog_mouse->init();
-        prog_mouse->addUniform("M");
-        prog_mouse->addAttribute("vertPos");
-        prog_mouse->addAttribute("vertNor");
-        prog_mouse->addAttribute("vertTex");
+		prog_mouse->init();
+		prog_mouse->addUniform("M");
+		prog_mouse->addAttribute("vertPos");
+		prog_mouse->addAttribute("vertNor");
+		prog_mouse->addAttribute("vertTex");
 
 		// Initialize the GLSL program.
 		prog_deferred = make_shared<Program>();
@@ -199,9 +204,10 @@ public:
 		prog_raytrace->init();
 		prog_raytrace->addAttribute("vertPos");
 		prog_raytrace->addAttribute("vertTex");
-    }
-    
-    void initGeom(const std::string& resourceDirectory)
+		prog_raytrace->addUniform("dovoxel");
+	}
+
+	void initGeom(const std::string& resourceDirectory)
 	{
 		// Deferred Stuff
 		//init rectangle mesh (2 triangles) for the post processing
@@ -252,58 +258,58 @@ public:
 		glEnableVertexAttribArray(2);
 		//key function to get up how many elements to pull out at a time (3)
 		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
-        
-        // Initialize mesh.
-        wall = make_shared<Shape>();
-        wall->loadMesh(resourceDirectory + "/internet_square.obj");
-        wall->resize();
-        wall->init();
-        
-        // Initialize mesh.
-        mouse = make_shared<Shape>();
-        mouse->loadMesh(resourceDirectory + "/internet_square.obj");
-        mouse->resize();
-        mouse->init();
-        
+
+		// Initialize mesh.
+		wall = make_shared<Shape>();
+		wall->loadMesh(resourceDirectory + "/internet_square.obj");
+		wall->resize();
+		wall->init();
+
+		// Initialize mesh.
+		mouse = make_shared<Shape>();
+		mouse->loadMesh(resourceDirectory + "/internet_square.obj");
+		mouse->resize();
+		mouse->init();
+
 		int width, height, channels;
 		char filepath[1000];
 
-        //texture
-        string str = resourceDirectory + "/lvl1.jpg";
-        strcpy(filepath, str.c_str());
-        unsigned char* data = stbi_load(filepath, &width, &height, &channels, 4);
-        glGenTextures(1, &wall_texture);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, wall_texture);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-        
-        str = resourceDirectory + "/lvl1normalscombined.jpg";
-        strcpy(filepath, str.c_str());
-        data = stbi_load(filepath, &width, &height, &channels, 4);
-        glGenTextures(1, &wall_normal_texture);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, wall_normal_texture);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-        
-        //[TWOTEXTURES]
-        //set the 2 textures to the correct samplers in the fragment shader:
-        GLuint Tex1Location = glGetUniformLocation(prog_wall->pid, "tex");
-        GLuint Tex2Location = glGetUniformLocation(prog_wall->pid, "tex2");
+		//texture
+		string str = resourceDirectory + "/lvl1.jpg";
+		strcpy(filepath, str.c_str());
+		unsigned char* data = stbi_load(filepath, &width, &height, &channels, 4);
+		glGenTextures(1, &wall_texture);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, wall_texture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
 
-        // Then bind the uniform samplers to texture units:
-        glUseProgram(prog_wall->pid);
-        glUniform1i(Tex1Location, 0);
-        glUniform1i(Tex2Location, 1);
+		str = resourceDirectory + "/lvl1normalscombined.jpg";
+		strcpy(filepath, str.c_str());
+		data = stbi_load(filepath, &width, &height, &channels, 4);
+		glGenTextures(1, &wall_normal_texture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, wall_normal_texture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		//[TWOTEXTURES]
+		//set the 2 textures to the correct samplers in the fragment shader:
+		GLuint Tex1Location = glGetUniformLocation(prog_wall->pid, "tex");
+		GLuint Tex2Location = glGetUniformLocation(prog_wall->pid, "tex2");
+
+		// Then bind the uniform samplers to texture units:
+		glUseProgram(prog_wall->pid);
+		glUniform1i(Tex1Location, 0);
+		glUniform1i(Tex2Location, 1);
 
 		glUseProgram(prog_deferred->pid);
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
@@ -322,7 +328,7 @@ public:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_BYTE, NULL);
-		
+
 		// Generate Position Texture
 		glGenTextures(1, &FBOpos);
 		glActiveTexture(GL_TEXTURE1);
@@ -333,7 +339,7 @@ public:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
 		glGenerateMipmap(GL_TEXTURE_2D);
-		
+
 		// Generate Normal Texture
 		glGenTextures(1, &FBOnorm);
 		glActiveTexture(GL_TEXTURE2);
@@ -388,8 +394,8 @@ public:
 		glGenTextures(1, &FBOcol2);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, FBOcol2);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_BYTE, NULL);
@@ -423,7 +429,7 @@ public:
 		Tex1Loc = glGetUniformLocation(prog_raytrace->pid, "col_tex");
 		Tex2Loc = glGetUniformLocation(prog_raytrace->pid, "pos_tex");
 		Tex3Loc = glGetUniformLocation(prog_raytrace->pid, "norm_tex");
-		int Tex4Loc = glGetUniformLocation(prog_raytrace->pid, "wall_tex");
+		int Tex4Loc = glGetUniformLocation(prog_raytrace->pid, "no_light_tex");
 		glUniform1i(Tex1Loc, 0);
 		glUniform1i(Tex2Loc, 1);
 		glUniform1i(Tex3Loc, 2);
@@ -439,15 +445,7 @@ public:
 			cout << "status framebuffer: bad" << endl;
 		}
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		//glUseProgram(prog_raytrace->pid);
-		//Tex1Loc = glGetUniformLocation(prog_raytrace->pid, "col_tex");
-		//Tex2Loc = glGetUniformLocation(prog_raytrace->pid, "pos_tex");
-		//Tex3Loc = glGetUniformLocation(prog_raytrace->pid, "norm_tex");
-		//glUniform1i(Tex1Loc, 0);
-		//glUniform1i(Tex2Loc, 1);
-		//glUniform1i(Tex3Loc, 2);
-    }
+	}
 
 	void create_SSBO() {
 		// Fill angle list with big numbers
@@ -468,7 +466,7 @@ public:
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 	}
 
-    
+
 	float map(float x, float in_min, float in_max, float out_min, float out_max)
 	{
 		return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
@@ -506,7 +504,7 @@ public:
 		glfwGetCursorPos(windowManager->windowHandle, &mouse_posX, &mouse_posY);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, fb);
-		GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+		GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
 		glDrawBuffers(3, buffers);
 
 		glClearColor(0.0, 0.0, 0.0, 0.0);
@@ -533,7 +531,7 @@ public:
 
 		// WALLS
 		// Top Walls
-		T = glm::translate(glm::mat4(1), glm::vec3(0.5,0.9,0));
+		T = glm::translate(glm::mat4(1), glm::vec3(0.5, 0.9, 0));
 		S = glm::scale(glm::mat4(1), glm::vec3(0.5, 0.1, 1));
 		M = T * S;
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
@@ -598,7 +596,7 @@ public:
 	{
 		if (pass_number == 2) {
 			glBindFramebuffer(GL_FRAMEBUFFER, fb2);
-			GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+			GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
 			glDrawBuffers(3, buffers);
 		}
 
@@ -668,6 +666,8 @@ public:
 		prog_mouse->unbind();
 
 		prog_raytrace->bind();
+
+		glUniform1f(prog_raytrace->getUniform("dovoxel"), voxeltoggle);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, FBOcol2);
 		glActiveTexture(GL_TEXTURE1);
@@ -675,6 +675,7 @@ public:
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, FBOnorm2);
 		glActiveTexture(GL_TEXTURE3);
+		// Send in no lighting texture to use for raytracing
 		glBindTexture(GL_TEXTURE_2D, FBOcol);
 		glBindVertexArray(VertexArrayIDBox);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -711,10 +712,10 @@ int main(int argc, char **argv)
 
 	application->init(resourceDir);
 	application->initGeom(resourceDir);
-	
+
 
 	// Loop until the user closes the window.
-	while (! glfwWindowShouldClose(windowManager->getHandle()))
+	while (!glfwWindowShouldClose(windowManager->getHandle()))
 	{
 		application->update_mouse();
 		application->create_SSBO();

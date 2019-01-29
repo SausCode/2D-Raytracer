@@ -5,43 +5,63 @@ in vec2 fragTex;
 layout(location = 0) uniform sampler2D col_tex;
 layout(location = 1) uniform sampler2D pos_tex;
 layout(location = 2) uniform sampler2D norm_tex;
-layout(location = 3) uniform sampler2D wall_tex;
+layout(location = 3) uniform sampler2D no_light_tex;
 
-vec3 voxel_transform(vec3 pos)
+
+uniform float dovoxel;
+vec2 voxel_transform(vec2 pos)
 {
 	//sponza is in the frame of [-1,1], and we have to map that to [0,255] in x, y, z
-	vec3 texpos = pos + vec3(1, 1, 1);	//[0,2]
+	vec2 texpos = pos + vec2(1, 1);	//[0,2]
 	texpos /= 2;
 	return texpos;
 }
 
-vec4 sampling(vec3 texposition, float mipmap)
+vec4 sampling(vec2 conedirection, vec2 texposition, float mipmap)
 {
+
+
+
+
 	uint imip = uint(mipmap);
 	float linint = mipmap - float(imip);
-	vec4 colA = texture(wall_tex, fragTex, imip);
-	vec4 colB = texture(wall_tex, fragTex, imip + 1);
-	return mix(colA, colB, linint);
+	//vec4 colA = texture(no_light_tex, fragTex, imip);
+	//vec4 colB = texture(no_light_tex, fragTex, imip + 1);
+	//	imip=0;
+	vec4 colA = texture(col_tex, texposition.xy, imip);
+	vec4 colB = texture(col_tex, texposition.xy, imip + 1);
+
+	vec2 norm = -texture(norm_tex, texposition.xy, 1).xy;
+
+	float d = dot(normalize(norm), normalize(conedirection));
+	d = clamp(d, 0, 1);
+
+
+	vec4 col = mix(colA, colB, linint)*d;
+
+
+	return col;
 }
 
-vec3 cone_tracing(vec3 conedirection, vec3 pixelpos, float angle)
+vec3 cone_tracing(vec2 conedirection, vec2 pixelpos, float angle)
 {
 	conedirection = normalize(conedirection);
 	float voxelSize = 2. / 256.;				//[-1,1] / resolution	
+	voxelSize = 0.01000003103;
 	//pixelpos += conedirection*voxelSize;	//to get some distance to the pixel against self-inducing
 	vec4 trace = vec4(0);
 	float distanceFromConeOrigin = voxelSize * 2;
 	float coneHalfAngle = angle;
-	for (int i = 0; i < 10; i++)
+	for (int i = 0; i < 15; i++)
 	{
 		float coneDiameter = 2 * tan(coneHalfAngle) * distanceFromConeOrigin;
 		float mip = log2(coneDiameter / voxelSize);
 		pixelpos = pixelpos + conedirection * distanceFromConeOrigin;
-		vec3 texpos = voxel_transform(pixelpos);
-		trace += sampling(texpos, mip);
-		if (trace.a > 0.7) {
-			break;
-		}
+		vec2 texpos = voxel_transform(pixelpos);
+		trace += sampling(conedirection, texpos, mip);
+		//if (trace.a > 0.7) {
+		//break;
+		//}
 		distanceFromConeOrigin += voxelSize;
 	}
 	return trace.rgb;
@@ -50,20 +70,21 @@ vec3 cone_tracing(vec3 conedirection, vec3 pixelpos, float angle)
 void main()
 {
 	color.a = 1;
-	float coneHalfAngle = 0.571239;
+	float coneHalfAngle = 0.051571239;
 	vec3 texturecolor = texture(col_tex, fragTex).rgb;
 	vec3 normals = texture(norm_tex, fragTex).rgb;
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
-	vec3 walls = texture(wall_tex, fragTex).rgb;
-	vec3 voxelcolor = cone_tracing(normals, world_pos, coneHalfAngle);
-	voxelcolor += cone_tracing(normals, world_pos, coneHalfAngle/8);
-	voxelcolor /= 2;
+	vec3 no_light = texture(no_light_tex, fragTex).rgb;
+	vec3 voxelcolor = cone_tracing(normals.xy, world_pos.xy, coneHalfAngle);
 	float magn = length(voxelcolor);
-	color.rgb = texturecolor + voxelcolor*.1;
+	color.rgb = texturecolor;
+	if (dovoxel>0.5)
+		color.rgb += voxelcolor * 1.4;
 
+	//color.rgb =-normals;
 	//color.rgb = texturecolor;
 	//color.rgb = voxelcolor;
 	//color.rgb = normals;
 	//color.rgb = world_pos;
-	//color.rgb = walls;
+	//color.rgb = no_light;
 }
