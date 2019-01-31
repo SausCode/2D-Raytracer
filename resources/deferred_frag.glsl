@@ -19,22 +19,21 @@ uniform int pass;
 uniform vec3 light_pos;
 uniform vec3 campos;
 uniform int screen_width;
-uniform int screen_height;
 
 float map(float x, float in_min, float in_max, float out_min, float out_max)
 {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-ivec2 fragTopAndBottomAngles(vec2 fragpos, vec3 lightpos){
+vec2 fragTopAndBottomAngles(vec2 fragpos, vec3 lightpos){
 	vec2 lower_left = fragpos;
 	vec2 lower_right = vec2(fragpos.x+(1.0f/screen_width), fragpos.y);
-	vec2 upper_right = vec2(fragpos.x+(1.0f/screen_width), fragpos.y+(1.0f/screen_height));
-	vec2 upper_left = vec2(fragpos.x, fragpos.y+(1.0f/screen_height));
+	vec2 upper_right = vec2(fragpos.x+(1.0f/screen_width), fragpos.y+(1.0f/screen_width));
+	vec2 upper_left = vec2(fragpos.x, fragpos.y+(1.0f/screen_width));
 
-	int min, max;
+	float min, max;
 	vec2 pos[4] = vec2[](lower_left, lower_right, upper_right, upper_left);
-	int angles[4];
+	float angles[4];
 
 	for(int i=0; i<4; i++){
 		// Light Direction
@@ -46,23 +45,21 @@ ivec2 fragTopAndBottomAngles(vec2 fragpos, vec3 lightpos){
 			angle = 2-angle;
 		}
 
-		float angle_converted = map(angle, -1, 3, 0, 1);
-		int bufferindex = int(angle_converted*ssbo_size);
+		angles[i] = angle;
 
-		angles[i] = bufferindex;
 	}
 
 	min = angles[0];
 	max = angles[0];
 
-	for(int i=1; i<3; i++){
+	for(int i=1; i<4; i++){
 		if(angles[i]<min)
 			min = angles[i];
-		if(angles[i]>max)
+		else if(angles[i]>max)
 			max = angles[i];
 	}
 
-	return ivec2(min, max);
+	return vec2(min, max);
 }
 
 void main()
@@ -79,17 +76,24 @@ void main()
 	vec2 fragpos = world_pos.xy;
 	vec3 lightpos = light_pos;
 
-	ivec2 angle_range = fragTopAndBottomAngles(fragpos, lightpos);
-	int min_angle = angle_range.x;
-	int max_angle = angle_range.y;
+
+	vec2 angle_range = fragTopAndBottomAngles(fragpos, lightpos);
+	float min_angle = angle_range.x;
+	float max_angle = angle_range.y;
+
+	float min_angle_converted = map(min_angle, -1, 3, 0, 1);
+	int min_bufferindex = int(min_angle_converted*ssbo_size);
+	float max_angle_converted = map(max_angle, -1, 3, 0, 1);
+	int max_bufferindex = int(max_angle_converted*ssbo_size);
+
 	
 	// Distance of light to fragment
 	float dist = length(lightpos.xy-fragpos.xy);
 	// Map result from -1 -> 3 to 0 -> ssbo_size
 	int distance_converted = int(map(dist, 0, 2.828, 0, 10000));
 	
-	for(int i=min_angle; i<=max_angle; i++){
-	
+	for(int i=min_bufferindex; i<=max_bufferindex; i++){
+
 		if (pass == 1){
 			// Convert float to int
 			atomicMin(angle_list[i].y, distance_converted);
@@ -104,7 +108,7 @@ void main()
 				color.rgb = texturecolor *d;
 
 				//diffuse light
-				vec3 lp = vec3(100,100,100);
+				vec3 lp = vec3(lightpos.xy,100);
 				vec3 ld = normalize(lp - world_pos);
 				float light = dot(ld,normals);	
 				light = clamp(light,0,1);
@@ -123,4 +127,5 @@ void main()
 		}
 		
 	}
+
 }
