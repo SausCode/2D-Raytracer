@@ -2,12 +2,15 @@
 #extension GL_ARB_shader_storage_buffer_object : require
 
 #define ssbo_size 2048
-layout (std430, binding=0) volatile buffer shader_data
+layout(std430, binding = 0) volatile buffer shader_data
 {
 	ivec4 angle_list[ssbo_size];
 };
 
-out vec4 color;
+layout(location = 0) out vec4 color;
+layout(location = 1) out vec4 pos_out;
+layout(location = 2) out vec4 norm_out;
+
 in vec2 fragTex;
 in vec3 fragNor;
 layout(location = 0) uniform sampler2D col_tex;
@@ -22,7 +25,7 @@ uniform int screen_width;
 
 float map(float x, float in_min, float in_max, float out_min, float out_max)
 {
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
 vec2 fragTopAndBottomAngles(vec2 fragpos, vec3 lightpos){
@@ -66,13 +69,10 @@ void main()
 {
 	color.a = 1;
 
-	vec3 texturecolor = texture(col_tex, fragTex, 0).rgb;
+	vec3 texturecolor = texture(col_tex, fragTex).rgb;
 	vec3 normals = texture(norm_tex, fragTex).rgb;
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
-	
-	color.rgb = normals;
-	//return;
-
+	normals *= -1;
 	vec2 fragpos = world_pos.xy;
 	vec3 lightpos = light_pos;
 
@@ -128,4 +128,6 @@ void main()
 		
 	}
 
+	norm_out = vec4(normals, 1);
+	pos_out = vec4(world_pos, 1);
 }

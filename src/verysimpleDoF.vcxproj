@@ -145,6 +145,8 @@
     <None Include="..\resources\deferred_vert.glsl" />
     <None Include="..\resources\mouse_frag.glsl" />
     <None Include="..\resources\mouse_vert.glsl" />
+    <None Include="..\resources\raytrace_frag.glsl" />
+    <None Include="..\resources\raytrace_vert.glsl" />
     <None Include="..\resources\wall_frag.glsl" />
     <None Include="..\resources\wall_vert.glsl" />
   </ItemGroup>
