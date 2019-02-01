@@ -22,6 +22,7 @@ uniform int pass;
 uniform vec3 light_pos;
 uniform vec3 campos;
 uniform int screen_width;
+uniform int screen_height;
 
 float map(float x, float in_min, float in_max, float out_min, float out_max)
 {
@@ -31,8 +32,8 @@ float map(float x, float in_min, float in_max, float out_min, float out_max)
 vec2 fragTopAndBottomAngles(vec2 fragpos, vec3 lightpos){
 	vec2 lower_left = fragpos;
 	vec2 lower_right = vec2(fragpos.x+(1.0f/screen_width), fragpos.y);
-	vec2 upper_right = vec2(fragpos.x+(1.0f/screen_width), fragpos.y+(1.0f/screen_width));
-	vec2 upper_left = vec2(fragpos.x, fragpos.y+(1.0f/screen_width));
+	vec2 upper_right = vec2(fragpos.x+(1.0f/screen_width), fragpos.y+(1.0f/screen_height));
+	vec2 upper_left = vec2(fragpos.x, fragpos.y+(1.0f/screen_height));
 
 	float min, max;
 	vec2 pos[4] = vec2[](lower_left, lower_right, upper_right, upper_left);
@@ -75,6 +76,8 @@ void main()
 	normals *= -1;
 	vec2 fragpos = world_pos.xy;
 	vec3 lightpos = light_pos;
+
+	color.rgb = normals;
 
 
 	vec2 angle_range = fragTopAndBottomAngles(fragpos, lightpos);
