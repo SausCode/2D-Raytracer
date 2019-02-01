@@ -32,8 +32,8 @@ float map(float x, float in_min, float in_max, float out_min, float out_max)
 vec2 fragTopAndBottomAngles(vec2 fragpos, vec3 lightpos){
 	vec2 lower_left = fragpos;
 	vec2 lower_right = vec2(fragpos.x+(1.0f/screen_width), fragpos.y);
-	vec2 upper_right = vec2(fragpos.x+(1.0f/screen_width), fragpos.y+(1.0f/screen_height));
-	vec2 upper_left = vec2(fragpos.x, fragpos.y+(1.0f/screen_height));
+	vec2 upper_right = vec2(fragpos.x+(1.0f/screen_width), fragpos.y+(1.0f/screen_width));
+	vec2 upper_left = vec2(fragpos.x, fragpos.y+(1.0f/screen_width));
 
 	float min, max;
 	vec2 pos[4] = vec2[](lower_left, lower_right, upper_right, upper_left);
@@ -97,35 +97,27 @@ void main()
 	
 	for(int i=min_bufferindex; i<=max_bufferindex; i++){
 
-		if (pass == 1){
+		if (pass == 1) {
 			// Convert float to int
 			atomicMin(angle_list[i].y, distance_converted);
 			memoryBarrier();
 		}
 
-		else{
-			if (angle_list[i].y > (distance_converted-500.00))
+		else {
+			if (angle_list[i].y > (distance_converted - 500.00))
 			{
-				float d = abs(angle_list[i].y - distance_converted)/500.;
-				d=pow(1-d,2);
-				color.rgb = texturecolor *d;
-
+				float d = abs(angle_list[i].y - distance_converted) / 500.;
+				d = pow(1 - d, 2);
+				color.rgb = texturecolor * d;
 				//diffuse light
-				vec3 lp = vec3(lightpos.xy,100);
+				vec3 lp = vec3(lightpos.xy, 0);
 				vec3 ld = normalize(lp - world_pos);
-				float light = dot(ld,normals);	
-				light = clamp(light,0,1);
-				//specular light
-				//vec3 camvec = normalize(campos - world_pos);
-				//vec3 h = normalize(camvec+ld);
-				//float spec = pow(dot(h,normals),5);
-				//spec = clamp(spec,0,1)*0.3;
-				//color.rgb = texturecolor * d * light + vec3(1,1,1)*spec;
-				color.rgb = texturecolor *d*light;
-
+				float light = dot(ld, normals);
+				light = clamp(light, 0, 1);
+				color.rgb = texturecolor * d*light;
 			}
-			else{
-				color.rgb = vec3(0,0,0);
+			else {
+				color.rgb = vec3(0, 0, 0);
 			}
 		}
 		
