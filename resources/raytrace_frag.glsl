@@ -7,93 +7,112 @@ layout(location = 1) uniform sampler2D pos_tex;
 layout(location = 2) uniform sampler2D norm_tex;
 layout(location = 3) uniform sampler2D no_light_tex;
 
-uniform float dovoxel;
+uniform int dovoxel;
 uniform vec3 mouse_pos;
+
+struct traceInfo {
+	vec3 color;
+	vec2 pos;
+};
 
 vec2 voxel_transform(vec2 pos)
 {
-	//sponza is in the frame of [-1,1], and we have to map that to [0,255] in x, y, z
-	vec2 texpos = pos + vec2(1, 1);	//[0,2]
+	vec2 texpos = pos + vec2(1, 1);
 	texpos /= 2;
 	return texpos;
 }
 
 vec4 sampling(vec2 conedirection, vec2 texposition, float mipmap)
 {
-
-
-
-
 	uint imip = uint(mipmap);
 	float linint = mipmap - float(imip);
-	//vec4 colA = texture(no_light_tex, fragTex, imip);
-	//vec4 colB = texture(no_light_tex, fragTex, imip + 1);
-	//	imip=0;
 	vec4 colA = texture(col_tex, texposition.xy, imip);
 	vec4 colB = texture(col_tex, texposition.xy, imip + 1);
-
 	vec2 norm = -texture(norm_tex, texposition.xy, 1).xy;
-
 	float d = dot(normalize(norm), normalize(conedirection));
 	d = clamp(d, 0, 1);
-
-
 	vec4 col = mix(colA, colB, linint)*d;
-
-
 	return col;
 }
 
-vec3 cone_tracing(vec2 conedirection, vec2 pixelpos, float angle)
+traceInfo cone_tracing(vec2 conedirection, vec2 pixelpos, float angle)
 {
+	traceInfo t;
 	conedirection = normalize(conedirection);
-	float voxelSize = 2. / 256.;				//[-1,1] / resolution	
-	voxelSize = 0.01000003103;
-	//pixelpos += conedirection*voxelSize;	//to get some distance to the pixel against self-inducing
+	float voxelSize = 2. / 256.;
+	voxelSize = 0.01;
 	vec4 trace = vec4(0);
 	float distanceFromConeOrigin = voxelSize * 2;
 	float coneHalfAngle = angle;
+	vec2 texpos;
 	for (int i = 0; i < 15; i++)
 	{
 		float coneDiameter = 2 * tan(coneHalfAngle) * distanceFromConeOrigin;
 		float mip = log2(coneDiameter / voxelSize);
 		pixelpos = pixelpos + conedirection * distanceFromConeOrigin;
-		vec2 texpos = voxel_transform(pixelpos);
+		texpos = voxel_transform(pixelpos);
 		trace += sampling(conedirection, texpos, mip);
-		//if (trace.a > 0.7) {
-		//break;
-		//}
 		distanceFromConeOrigin += voxelSize;
 	}
-	return trace.rgb;
+	t.color = trace.rgb;
+	t.pos = texpos;
+	return t;
+}
+
+vec3 multi_bounce(vec2 conedirection, vec2 pixelpos, float angle, float bounces)
+{
+	vec3 col;
+	traceInfo t;
+	t = cone_tracing(conedirection, pixelpos, angle);
+	col += t.color;
+	for (int i = 1; i < bounces; i++)
+	{
+		vec2 norm = texture(norm_tex, t.pos).rg;
+		col += cone_tracing(norm, t.pos, angle).color;
+	}
+	return col / bounces;
 }
 
 void main()
 {
 	color.a = 1;
-	float coneHalfAngle = 0.051571239;
+	float coneHalfAngle = 0.05;
 	vec3 texturecolor = texture(col_tex, fragTex).rgb;
 	vec3 normals = texture(norm_tex, fragTex).rgb;
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
-	vec3 voxelcolor = cone_tracing(normals.xy, world_pos.xy, coneHalfAngle);
-	//voxelcolor += cone_tracing(normals.xy + vec2(.1, .1), world_pos.xy, coneHalfAngle);
-	//voxelcolor += cone_tracing(normals.xy + vec2(.1, -.1), world_pos.xy, coneHalfAngle);
-	//voxelcolor += cone_tracing(normals.xy + vec2(-.1, .1), world_pos.xy, coneHalfAngle);
-	//voxelcolor += cone_tracing(normals.xy + vec2(-.1, -.1), world_pos.xy, coneHalfAngle);
-	//voxelcolor /= 5;
-	vec3 reflection = cone_tracing(reflect(vec2(0), normals.xy), world_pos.xy, coneHalfAngle);
-	float magn = length(voxelcolor);
+	vec3 voxelcolor;
 	color.rgb = texturecolor;
-	if (dovoxel > 0.5)
+	if (world_pos != vec3(0))
 	{
-		color.rgb += voxelcolor;// *1.4;
+		switch (dovoxel)
+		{
+			case 0:
+				color.rgb = texturecolor;
+				break;
+			case 1:
+				color.rgb += multi_bounce(normals.xy, world_pos.xy, coneHalfAngle, 1);
+				break;
+			case 2:
+				color.rgb += multi_bounce(normals.xy, world_pos.xy, coneHalfAngle, 2);
+				break;
+			case 3:
+				color.rgb += multi_bounce(normals.xy, world_pos.xy, coneHalfAngle, 2);
+				color.rgb += multi_bounce(normals.xy + vec2(.1, .1), world_pos.xy, coneHalfAngle, 1);
+				color.rgb += multi_bounce(normals.xy + vec2(.1, -.1), world_pos.xy, coneHalfAngle, 1);
+				color.rgb += multi_bounce(normals.xy + vec2(-.1, .1), world_pos.xy, coneHalfAngle, 1);
+				color.rgb += multi_bounce(normals.xy + vec2(-.1, -.1), world_pos.xy, coneHalfAngle, 1);
+				break;
+			case 4:
+				color.rgb += multi_bounce(normals.xy, world_pos.xy, coneHalfAngle, 2);
+				color.rgb += multi_bounce(normals.xy + vec2(.1, .1), world_pos.xy, coneHalfAngle, 2);
+				color.rgb += multi_bounce(normals.xy + vec2(.1, -.1), world_pos.xy, coneHalfAngle, 2);
+				color.rgb += multi_bounce(normals.xy + vec2(-.1, .1), world_pos.xy, coneHalfAngle, 2);
+				color.rgb += multi_bounce(normals.xy + vec2(-.1, -.1), world_pos.xy, coneHalfAngle, 2);
+				break;
+		}
 	}
-	else if (dovoxel > 1.5 && distance(mouse_pos, world_pos) > .2)
+	else
 	{
-		color.rgb += voxelcolor;
-		color.rgb += reflection;
-		color.rgb *= 1.2;
+		color.rgb = texturecolor;
 	}
-
-	/*color.rgb = world_pos;*/
 }

@@ -25,7 +25,7 @@ using namespace std;
 using namespace glm;
 
 #define ssbo_size 2048
-#define FPS 1000
+#define FPS 60
 
 double get_last_elapsed_time() {
 	static double lasttime = glfwGetTime();
@@ -90,8 +90,8 @@ public:
 	glm::vec2 fire_to2 = glm::vec2(0);
 	double time = 0.0;
 	float t = 0.0;
+	int voxeltoggle = 0;
 
-	float voxeltoggle = 0;
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
 		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
@@ -100,17 +100,9 @@ public:
 		}
 		if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE)
 		{
-			switch ((int)voxeltoggle)
+			if (voxeltoggle++ > 3)
 			{
-			case 0:
-				voxeltoggle = 1;
-				break;
-			case 1:
-				voxeltoggle = 2;
-				break;
-			case 2:
 				voxeltoggle = 0;
-				break;
 			}
 			std::cout << "voxeltoggle = " << voxeltoggle << std::endl;
 		}
@@ -222,7 +214,7 @@ public:
 		if (!prog_raytrace->init())
 		{
 			std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
-			exit(1);
+			//exit(1);
 		}
 
 		prog_raytrace->init();
@@ -652,7 +644,6 @@ public:
 
 	void render_deferred()
 	{
-		double frametime = get_last_elapsed_time();
 		if (pass_number == 2) {
 			glBindFramebuffer(GL_FRAMEBUFFER, fb2);
 			GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
@@ -691,12 +682,12 @@ public:
 		prog_deferred->unbind();
 
 		if (pass_number == 2) {
-
+			double frametime = get_last_elapsed_time();
 			// Draw cursor
 			prog_fire->bind();
 			glm::mat4 M, S, T, R;
 			T = glm::translate(glm::mat4(1), mouse_pos);
-			S = glm::scale(glm::mat4(1), glm::vec3(0.025*2, 0.05*2, 0.05));
+			S = glm::scale(glm::mat4(1), glm::vec3(0.025 * 2, 0.05 * 2, 0.05));
 			R = glm::rotate(glm::mat4(1), glm::radians(180.f), glm::vec3(0, 0, 1));
 			M = T * S * R;
 			glActiveTexture(GL_TEXTURE0);
@@ -762,7 +753,7 @@ public:
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		prog_raytrace->bind();
-		glUniform1f(prog_raytrace->getUniform("dovoxel"), voxeltoggle);
+		glUniform1i(prog_raytrace->getUniform("dovoxel"), voxeltoggle);
 		glUniform3fv(prog_raytrace->getUniform("mouse_pos"), 1, &mouse_pos.x);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, FBOcol2);
