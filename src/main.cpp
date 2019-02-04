@@ -25,8 +25,17 @@ using namespace std;
 using namespace glm;
 
 #define ssbo_size 2048
+#define FPS 1000
 
-#ifdef __WIN32
+double get_last_elapsed_time() {
+	static double lasttime = glfwGetTime();
+	double actualtime = glfwGetTime();
+	double difference = actualtime - lasttime;
+	lasttime = actualtime;
+	return difference;
+}
+
+#ifdef WIN32
 // Use dedicated GPU on windows
 extern "C"
 {
@@ -48,7 +57,7 @@ public:
 	WindowManager * windowManager = nullptr;
 
 	// Our shader program
-	std::shared_ptr<Program> prog_wall, prog_mouse, prog_deferred, prog_raytrace;
+	std::shared_ptr<Program> prog_wall, prog_mouse, prog_deferred, prog_raytrace, prog_fire;
 
 	// Shape to be used (from obj file)
 	shared_ptr<Shape> wall, mouse;
@@ -57,7 +66,7 @@ public:
 	camera mycam;
 
 	//texture for sim
-	GLuint wall_texture, wall_normal_texture;
+	GLuint wall_texture, wall_normal_texture, fire_texture;
 
 	// textures for position, color, and normal
 	GLuint fb, fb2, depth_rb, FBOpos, FBOcol, FBOnorm, FBOpos2, FBOcol2, FBOnorm2;
@@ -77,6 +86,10 @@ public:
 	GLuint ssbo_GPU_id;
 
 	glm::vec3 mouse_pos;
+	glm::vec2 fire_to = glm::vec2(0);
+	glm::vec2 fire_to2 = glm::vec2(0);
+	double time = 0.0;
+	float t = 0.0;
 
 	float voxeltoggle = 0;
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
@@ -87,8 +100,19 @@ public:
 		}
 		if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE)
 		{
-			if (voxeltoggle > 0.5)voxeltoggle = 0;
-			else voxeltoggle = 1;
+			switch ((int)voxeltoggle)
+			{
+			case 0:
+				voxeltoggle = 1;
+				break;
+			case 1:
+				voxeltoggle = 2;
+				break;
+			case 2:
+				voxeltoggle = 0;
+				break;
+			}
+			std::cout << "voxeltoggle = " << voxeltoggle << std::endl;
 		}
 		if (key == GLFW_KEY_D && action == GLFW_PRESS)
 		{
@@ -205,6 +229,27 @@ public:
 		prog_raytrace->addAttribute("vertPos");
 		prog_raytrace->addAttribute("vertTex");
 		prog_raytrace->addUniform("dovoxel");
+		prog_raytrace->addUniform("mouse_pos");
+
+		// Initialize the GLSL program.
+		prog_fire = make_shared<Program>();
+		prog_fire->setVerbose(false);
+		prog_fire->setShaderNames(resourceDirectory + "/fire.vert", resourceDirectory + "/fire.frag");
+
+		if (!prog_fire->init())
+		{
+			std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
+			exit(1);
+		}
+
+		prog_fire->init();
+		prog_fire->addUniform("M");
+		prog_fire->addUniform("to");
+		prog_fire->addUniform("to2");
+		prog_fire->addUniform("t");
+		prog_fire->addAttribute("vertPos");
+		prog_fire->addAttribute("vertNor");
+		prog_fire->addAttribute("vertTex");
 	}
 
 	void initGeom(const std::string& resourceDirectory)
@@ -274,10 +319,23 @@ public:
 		int width, height, channels;
 		char filepath[1000];
 
+		std::string str = resourceDirectory + "/fire.png";;
+		unsigned char* data = stbi_load(str.c_str(), &width, &height, &channels, 4);
+
+		glGenTextures(1, &fire_texture);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, fire_texture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
 		//texture
-		string str = resourceDirectory + "/lvl1.jpg";
+		str = resourceDirectory + "/lvl1.jpg";
 		strcpy(filepath, str.c_str());
-		unsigned char* data = stbi_load(filepath, &width, &height, &channels, 4);
+		data = stbi_load(filepath, &width, &height, &channels, 4);
 		glGenTextures(1, &wall_texture);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, wall_texture);
@@ -594,6 +652,7 @@ public:
 
 	void render_deferred()
 	{
+		double frametime = get_last_elapsed_time();
 		if (pass_number == 2) {
 			glBindFramebuffer(GL_FRAMEBUFFER, fb2);
 			GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
@@ -632,6 +691,24 @@ public:
 		prog_deferred->unbind();
 
 		if (pass_number == 2) {
+
+			// Draw cursor
+			prog_fire->bind();
+			glm::mat4 M, S, T, R;
+			T = glm::translate(glm::mat4(1), mouse_pos);
+			S = glm::scale(glm::mat4(1), glm::vec3(0.025*2, 0.05*2, 0.05));
+			R = glm::rotate(glm::mat4(1), glm::radians(180.f), glm::vec3(0, 0, 1));
+			M = T * S * R;
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, fire_texture);
+			update_fire_tex(frametime);
+			glUniform1f(prog_fire->getUniform("t"), t);
+			glUniform2fv(prog_fire->getUniform("to"), 1, &fire_to.x);
+			glUniform2fv(prog_fire->getUniform("to2"), 1, &fire_to2.x);
+			glUniformMatrix4fv(prog_fire->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+			mouse->draw(prog_fire);
+			prog_fire->unbind();
+
 			// Save output to framebuffer
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glBindTexture(GL_TEXTURE_2D, FBOcol2);
@@ -640,6 +717,36 @@ public:
 			glGenerateMipmap(GL_TEXTURE_2D);
 			glBindTexture(GL_TEXTURE_2D, FBOnorm2);
 			glGenerateMipmap(GL_TEXTURE_2D);
+		}
+	}
+
+	void update_fire_tex(double frameTime)
+	{
+		time += frameTime;
+
+		if (time > 1.f / (float)FPS) {
+			// Time to update new frame
+			time -= 1.f / (float)FPS;
+			fire_to = fire_to2;
+			t = time / (float)FPS;
+
+			if (fire_to2.x >= (7.f / 8.f)) {
+				if (fire_to2.y >= (7.f / 8.f)) {
+					fire_to2.x = 0.f;
+					fire_to2.y = 0.f;
+				}
+				else {
+					fire_to2.x = 0.f;
+					fire_to2.y += (1.f / 8.f);
+				}
+			}
+			else {
+				fire_to2.x += (1.f / 8.f);
+			}
+		}
+		else {
+			// Same frame just change t
+			t = (float)time / (float)FPS;
 		}
 	}
 
@@ -654,20 +761,9 @@ public:
 		glClearColor(0.0, 0.0, 0.0, 0.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// Draw cursor
-		glm::mat4 M, S, T;
-		prog_mouse->bind();
-		// MOUSE
-		T = glm::translate(glm::mat4(1), mouse_pos);
-		S = glm::scale(glm::mat4(1), glm::vec3(0.025, 0.05, 0.05));
-		M = T * S;
-		glUniformMatrix4fv(prog_mouse->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		mouse->draw(prog_mouse);
-		prog_mouse->unbind();
-
 		prog_raytrace->bind();
-
 		glUniform1f(prog_raytrace->getUniform("dovoxel"), voxeltoggle);
+		glUniform3fv(prog_raytrace->getUniform("mouse_pos"), 1, &mouse_pos.x);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, FBOcol2);
 		glActiveTexture(GL_TEXTURE1);
