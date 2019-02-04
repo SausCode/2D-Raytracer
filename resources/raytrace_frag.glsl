@@ -97,17 +97,17 @@ void main()
 				break;
 			case 3:
 				color.rgb += multi_bounce(normals.xy, world_pos.xy, coneHalfAngle, 2);
-				color.rgb += multi_bounce(normals.xy + vec2(.1, .1), world_pos.xy, coneHalfAngle, 1);
-				color.rgb += multi_bounce(normals.xy + vec2(.1, -.1), world_pos.xy, coneHalfAngle, 1);
-				color.rgb += multi_bounce(normals.xy + vec2(-.1, .1), world_pos.xy, coneHalfAngle, 1);
-				color.rgb += multi_bounce(normals.xy + vec2(-.1, -.1), world_pos.xy, coneHalfAngle, 1);
+				color.rgb += multi_bounce(normals.xy + clamp(noise2(vec2(.1, .1)), -.1, .1), world_pos.xy, coneHalfAngle, 1);
+				color.rgb += multi_bounce(normals.xy + clamp(noise2(vec2(.1, -.1)), -.1, .1), world_pos.xy, coneHalfAngle, 1);
+				color.rgb += multi_bounce(normals.xy + clamp(noise2(vec2(-.1, .1)), -.1, .1), world_pos.xy, coneHalfAngle, 1);
+				color.rgb += multi_bounce(normals.xy + clamp(noise2(vec2(-.1, -.1)), -.1, .1), world_pos.xy, coneHalfAngle, 1);
 				break;
 			case 4:
 				color.rgb += multi_bounce(normals.xy, world_pos.xy, coneHalfAngle, 2);
-				color.rgb += multi_bounce(normals.xy + vec2(.1, .1), world_pos.xy, coneHalfAngle, 2);
-				color.rgb += multi_bounce(normals.xy + vec2(.1, -.1), world_pos.xy, coneHalfAngle, 2);
-				color.rgb += multi_bounce(normals.xy + vec2(-.1, .1), world_pos.xy, coneHalfAngle, 2);
-				color.rgb += multi_bounce(normals.xy + vec2(-.1, -.1), world_pos.xy, coneHalfAngle, 2);
+				color.rgb += multi_bounce(normals.xy + clamp(noise2(vec2(.1, .1)), -.1, .1), world_pos.xy, coneHalfAngle, 2);
+				color.rgb += multi_bounce(normals.xy + clamp(noise2(vec2(.1, -.1)), -.1, .1), world_pos.xy, coneHalfAngle, 2);
+				color.rgb += multi_bounce(normals.xy + clamp(noise2(vec2(-.1, .1)), -.1, .1), world_pos.xy, coneHalfAngle, 2);
+				color.rgb += multi_bounce(normals.xy + clamp(noise2(vec2(-.1, -.1)), -.1, .1), world_pos.xy, coneHalfAngle, 2);
 				break;
 		}
 	}
