@@ -77,7 +77,7 @@ public:
 	// Data necessary to give our triangle to OpenGL
 	GLuint VertexBufferID, VertexBufferID2;
 
-	GLuint VertexArrayIDBox, VertexBufferIDBox, VertexBufferTex, VertexArrayIDBox2, VertexBufferIDBox2, VertexBufferTex2;
+	GLuint VertexArrayIDBox, VertexBufferIDBox, VertexBufferTex, VertexArrayIDBox2, VertexBufferIDBox2, VertexBufferTex2, VertexNormDBox2;
 	GLuint InstanceBuffer;
 
 	double mouse_posX, mouse_posY;
@@ -336,8 +336,42 @@ public:
 		glEnableVertexAttribArray(0);
 		//key function to get up how many elements to pull out at a time (3)
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+		/*
+		//color
+		GLfloat* cloud_norm = new GLfloat[12];
+		int normc = 0;
+		cloud_norm[normc++] = 0, cloud_norm[normc++] = (1.0 / 2);
+		cloud_norm[normc++] = (1.0 / 2), cloud_norm[normc++] = (1.0 / 2);
+		cloud_norm[normc++] = 0, cloud_norm[normc++] = 0;
+		cloud_norm[normc++] = (1.0 / 2), cloud_norm[normc++] = (1.0 / 2);
+		cloud_norm[normc++] = (1.0 / 2), cloud_norm[normc++] = 0;
+		cloud_norm[normc++] = 0, cloud_norm[normc++] = 0;
+		glGenBuffers(1, &VertexNormDBox2);
+		//set the current state to focus on our vertex buffer
+		glBindBuffer(GL_ARRAY_BUFFER, VertexNormDBox2);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float), cloud_norm, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+		*/
+		glGenBuffers(1, &VertexNormDBox2);
+		//set the current state to focus on our vertex buffer
+		glBindBuffer(GL_ARRAY_BUFFER, VertexNormDBox2);
+		//color
+		GLfloat cube_norm[] = {
+			// front colors
+			1.0, 0.0, 0.0,
+			1.0, 0.0, 0.0,
+			1.0, 0.0, 0.0,
+			1.0, 0.0, 0.0,
+			1.0, 0.0, 0.0,
+			1.0, 0.0, 0.0
 
+		};
 
+		glBufferData(GL_ARRAY_BUFFER, sizeof(cube_norm), cube_norm, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+		
 		//generate vertex buffer to hand off to OGL
 		glGenBuffers(1, &VertexBufferTex2);
 		//set the current state to focus on our vertex buffer
@@ -415,7 +449,7 @@ public:
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
-		str = resourceDirectory + "/cloud_sprite_normal.png";
+		str = resourceDirectory + "/clouds_sprite_normal2.png";
 		strcpy(filepath, str.c_str());
 		data = stbi_load(filepath, &width, &height, &channels, 4);
 		glGenTextures(1, &cloud_normal_texture);
@@ -850,10 +884,10 @@ public:
 		M = S;
 		glUniformMatrix4fv(prog_cloud->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 10);
-		glBindVertexArray(0);
+		glBindVertexArray(0);*/
 		prog_cloud->unbind();
-		glEnable(GL_DEPTH_TEST);
-		*/
+		//glEnable(GL_DEPTH_TEST);
+		
 
 		// Save output to framebuffer
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);

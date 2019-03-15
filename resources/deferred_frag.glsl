@@ -78,7 +78,7 @@ void main()
 	vec3 lightpos = light_pos;
 
 	color.rgb = normals;
-
+	//return;
 	vec2 angle_range = fragTopAndBottomAngles(fragpos, lightpos);
 	float min_angle = angle_range.x;
 	float max_angle = angle_range.y;
@@ -121,7 +121,7 @@ void main()
 		}
 		
 	}
-	color.rgb = texturecolor;
+	//color.rgb = texturecolor;
 	norm_out = vec4(normals, 1);
 	pos_out = vec4(world_pos, 1);
 }

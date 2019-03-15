@@ -18,7 +18,7 @@ layout(location = 1) uniform sampler2D tex2;
 void main()
 {
 	vec4 texturecolor = texture(tex, fragTex + cloud_offset);
-	vec3 normalfromtex = texture(tex2, fragTex).rgb;
+	vec3 normalfromtex = texture(tex2, fragTex + cloud_offset).rgb;
 	vec3 texturenormal = (normalfromtex - vec3(0.5, 0.5, 0.5));
 	texturenormal = texturenormal * 2.0;
 	vec3 ey = normalize(fragNor);
@@ -29,7 +29,7 @@ void main()
 	norm_out = vec4(readynormal, 1);
 	color = texturecolor;
 
-	if(color.a==0 || (color.r==0 && color.g==0 && color.b==0) || (color.r==1 && color.g==1 && color.b==1))
+	if(color.a==0 )
 		discard;
 	else
 		color.a=1;
