@@ -141,6 +141,8 @@
     <ClInclude Include="WindowManager.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\resources\cloud_frag.glsl" />
+    <None Include="..\resources\cloud_vert.glsl" />
     <None Include="..\resources\deferred_frag.glsl" />
     <None Include="..\resources\deferred_vert.glsl" />
     <None Include="..\resources\fire.frag" />

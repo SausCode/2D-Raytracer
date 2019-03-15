@@ -61,5 +61,11 @@
     <None Include="..\resources\fire.vert">
       <Filter>shader</Filter>
     </None>
+    <None Include="..\resources\cloud_frag.glsl">
+      <Filter>shader</Filter>
+    </None>
+    <None Include="..\resources\cloud_vert.glsl">
+      <Filter>shader</Filter>
+    </None>
   </ItemGroup>
 </Project>

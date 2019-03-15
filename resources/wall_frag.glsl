@@ -15,7 +15,7 @@ layout(location = 1) uniform sampler2D tex2;
 
 void main()
 {
-	vec3 texturecolor = texture(tex, fragTex).rgb;
+	vec4 texturecolor = texture(tex, fragTex);
 	vec3 normalfromtex = texture(tex2, fragTex).rgb;
 	vec3 texturenormal = (normalfromtex - vec3(0.5, 0.5, 0.5));
 	texturenormal = texturenormal * 2.0;
@@ -26,6 +26,9 @@ void main()
 	vec3 readynormal = normalize(TBN*texturenormal);
 	pos_out = worldPos;
 	norm_out = vec4(readynormal, 1);
-	color.a = 1;
-	color.rgb = texturecolor;
+	color = texturecolor;
+	if(color.a==0)
+		discard;
+	else
+		color.a=1;
 }

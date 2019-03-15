@@ -57,27 +57,28 @@ public:
 	WindowManager * windowManager = nullptr;
 
 	// Our shader program
-	std::shared_ptr<Program> prog_wall, prog_mouse, prog_deferred, prog_raytrace, prog_fire;
+	std::shared_ptr<Program> prog_wall, prog_mouse, prog_deferred, prog_raytrace, prog_fire, prog_cloud;
 
 	// Shape to be used (from obj file)
-	shared_ptr<Shape> wall, mouse;
+	shared_ptr<Shape> wall, mouse, cloud;
 
 	//camera
 	camera mycam;
 
 	//texture for sim
-	GLuint wall_texture, wall_normal_texture, fire_texture;
+	GLuint wall_texture, wall_normal_texture, fire_texture, cloud_texture, cloud_normal_texture;
 
 	// textures for position, color, and normal
 	GLuint fb, fb2, depth_rb, FBOpos, FBOcol, FBOnorm, FBOpos2, FBOcol2, FBOnorm2;
 
 	// Contains vertex information for OpenGL
-	GLuint VertexArrayID;
+	GLuint VertexArrayID, VertexArrayID2;
 
 	// Data necessary to give our triangle to OpenGL
-	GLuint VertexBufferID;
+	GLuint VertexBufferID, VertexBufferID2;
 
-	GLuint VertexArrayIDBox, VertexBufferIDBox, VertexBufferTex;
+	GLuint VertexArrayIDBox, VertexBufferIDBox, VertexBufferTex, VertexArrayIDBox2, VertexBufferIDBox2, VertexBufferTex2;
+	GLuint InstanceBuffer;
 
 	double mouse_posX, mouse_posY;
 	int pass_number = 1;
@@ -242,6 +243,23 @@ public:
 		prog_fire->addAttribute("vertPos");
 		prog_fire->addAttribute("vertNor");
 		prog_fire->addAttribute("vertTex");
+
+		// Initialize the GLSL program.
+		prog_cloud = make_shared<Program>();
+		prog_cloud->setVerbose(false);
+		prog_cloud->setShaderNames(resourceDirectory + "/cloud_vert.glsl", resourceDirectory + "/cloud_frag.glsl");
+		if (!prog_cloud->init())
+		{
+			std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
+			exit(1);
+		}
+		prog_cloud->init();
+		prog_cloud->addUniform("M");
+		prog_cloud->addUniform("cloud_offset");
+		prog_cloud->addAttribute("vertPos");
+		prog_cloud->addAttribute("vertNor");
+		prog_cloud->addAttribute("vertTex");
+		prog_cloud->addAttribute("InstancePos");
 	}
 
 	void initGeom(const std::string& resourceDirectory)
@@ -296,6 +314,50 @@ public:
 		//key function to get up how many elements to pull out at a time (3)
 		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
+		glGenVertexArrays(1, &VertexArrayIDBox2);
+		glBindVertexArray(VertexArrayIDBox2);
+
+		//generate vertex buffer to hand off to OGL
+		glGenBuffers(1, &VertexBufferIDBox2);
+		//set the current state to focus on our vertex buffer
+		glBindBuffer(GL_ARRAY_BUFFER, VertexBufferIDBox2);
+		GLfloat* cloud_ver = new GLfloat[18];
+		int verc = 0;
+		cloud_ver[verc++] = -1.0, cloud_ver[verc++] = -1.0, cloud_ver[verc++] = 0.0;
+		cloud_ver[verc++] = 1.0, cloud_ver[verc++] = -1.0, cloud_ver[verc++] = 0.0;
+		cloud_ver[verc++] = -1.0, cloud_ver[verc++] = 1.0, cloud_ver[verc++] = 0.0;
+		cloud_ver[verc++] = 1.0, cloud_ver[verc++] = -1, cloud_ver[verc++] = 0.0;
+		cloud_ver[verc++] = 1.0, cloud_ver[verc++] = 1.0, cloud_ver[verc++] = 0.0;
+		cloud_ver[verc++] = -1.0, cloud_ver[verc++] = 1.0, cloud_ver[verc++] = 0.0;
+
+		//actually memcopy the data - only do this once
+		glBufferData(GL_ARRAY_BUFFER, 18 * sizeof(float), cloud_ver, GL_STATIC_DRAW);
+		//we need to set up the vertex array
+		glEnableVertexAttribArray(0);
+		//key function to get up how many elements to pull out at a time (3)
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+
+		//generate vertex buffer to hand off to OGL
+		glGenBuffers(1, &VertexBufferTex2);
+		//set the current state to focus on our vertex buffer
+		glBindBuffer(GL_ARRAY_BUFFER, VertexBufferTex2);
+		GLfloat* cloud_tex = new GLfloat[12];
+		int texc = 0;
+		cloud_tex[texc++] = 0, cloud_tex[texc++] = (1.0/2);
+		cloud_tex[texc++] = (1.0/2), cloud_tex[texc++] = (1.0/2);
+		cloud_tex[texc++] = 0, cloud_tex[texc++] = 0;
+		cloud_tex[texc++] = (1.0/2), cloud_tex[texc++] = (1.0 / 2);
+		cloud_tex[texc++] = (1.0 / 2), cloud_tex[texc++] = 0;
+		cloud_tex[texc++] = 0, cloud_tex[texc++] = 0;
+
+		//actually memcopy the data - only do this once
+		glBufferData(GL_ARRAY_BUFFER, 12 * sizeof(float), cloud_tex, GL_STATIC_DRAW);
+		//we need to set up the vertex array
+		glEnableVertexAttribArray(2);
+		//key function to get up how many elements to pull out at a time (3)
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
 		// Initialize mesh.
 		wall = make_shared<Shape>();
 		wall->loadMesh(resourceDirectory + "/internet_square.obj");
@@ -308,12 +370,77 @@ public:
 		mouse->resize();
 		mouse->init();
 
+		//generate vertex buffer to hand off to OGL
+		glGenBuffers(1, &InstanceBuffer);
+		//set the current state to focus on our vertex buffer
+		glBindBuffer(GL_ARRAY_BUFFER, InstanceBuffer);
+		glm::vec4* positions = new glm::vec4[10];
+		for (int i = 0; i < 10; i++) {
+			float pos = i / 10.f;
+			positions[i] = glm::vec4(pos, 0.0f, 0.0f, 0.0f);
+			cout << positions[i].x << ", " << positions[i].y << endl;
+		}
+		//actually memcopy the data - only do this once
+		glBufferData(GL_ARRAY_BUFFER, 10 * sizeof(glm::vec4), positions, GL_STATIC_DRAW);
+
+		
+		int position_loc = glGetAttribLocation(prog_cloud->pid, "InstancePos");
+		for (int i = 0; i < 10; i++)
+		{
+			// Set up the vertex attribute
+			glVertexAttribPointer(position_loc + i,              // Location
+				1, GL_FLOAT, GL_FALSE,       // vec4
+				sizeof(vec4),                // Stride
+				(void*)(sizeof(vec4) * i)); // Start offset
+											 // Enable it
+			glEnableVertexAttribArray(position_loc + i);
+			// Make it instanced
+			glVertexAttribDivisor(position_loc + i, 0);
+		}
+		
+
 		int width, height, channels;
 		char filepath[1000];
 
-		std::string str = resourceDirectory + "/fire.png";;
-		unsigned char* data = stbi_load(str.c_str(), &width, &height, &channels, 4);
+		std::string str = resourceDirectory + "/clouds_sprite.png";
+		strcpy(filepath, str.c_str());
+		unsigned char* data = stbi_load(filepath, &width, &height, &channels, 4);
+		glGenTextures(1, &cloud_texture);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, cloud_texture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
 
+		str = resourceDirectory + "/cloud_sprite_normal.png";
+		strcpy(filepath, str.c_str());
+		data = stbi_load(filepath, &width, &height, &channels, 4);
+		glGenTextures(1, &cloud_normal_texture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, cloud_normal_texture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		//[TWOTEXTURES]
+//set the 2 textures to the correct samplers in the fragment shader:
+		GLuint CloudTex1Location = glGetUniformLocation(prog_cloud->pid, "tex");
+		GLuint CloudTex2Location = glGetUniformLocation(prog_cloud->pid, "tex2");
+
+		// Then bind the uniform samplers to texture units:
+		glUseProgram(prog_cloud->pid);
+		glUniform1i(CloudTex1Location, 0);
+		glUniform1i(CloudTex2Location, 1);
+
+
+		str = resourceDirectory + "/fire.png";;
+		data = stbi_load(str.c_str(), &width, &height, &channels, 4);
 		glGenTextures(1, &fire_texture);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, fire_texture);
@@ -631,6 +758,66 @@ public:
 
 		//done, unbind stuff
 		prog_wall->unbind();
+
+		//glDisable(GL_DEPTH_TEST);
+
+		// Draw mesh using GLSL
+		prog_cloud->bind();
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, cloud_texture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, cloud_normal_texture);
+
+		glDisable(GL_DEPTH_TEST);
+
+		glBindVertexArray(VertexArrayIDBox2);
+		
+		T = glm::translate(glm::mat4(1), glm::vec3(0.05, 0.3, 0));
+		S = glm::scale(glm::mat4(1), glm::vec3(0.1, 0.1, 1));
+		M = T*S;
+		static glm::vec2 cloud_offset = glm::vec2(0.0);
+		static int x = 0, y = 0;
+		glUniformMatrix4fv(prog_cloud->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		glUniform2fv(prog_cloud->getUniform("cloud_offset"), 1, &cloud_offset[0]);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		
+		T = glm::translate(glm::mat4(1), glm::vec3(0.15, 0.3, 0));
+		M = T * S;
+		x = 1;
+		y = 0;
+		cloud_offset = glm::vec2((x / 2.0), y / (2.0));
+		glUniformMatrix4fv(prog_cloud->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		glUniform2fv(prog_cloud->getUniform("cloud_offset"), 1, &cloud_offset[0]);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		T = glm::translate(glm::mat4(1), glm::vec3(0.1, 0.4, 0));
+		M = T * S;
+		x = 0;
+		y = 1;
+		cloud_offset = glm::vec2((x / 2.0), (y / 2.0));
+		glUniformMatrix4fv(prog_cloud->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		glUniform2fv(prog_cloud->getUniform("cloud_offset"), 1, &cloud_offset[0]);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		T = glm::translate(glm::mat4(1), glm::vec3(0.1, 0.2, 0));
+		M = T * S;
+		x = 1;
+		y = 1;
+		cloud_offset = glm::vec2((x / 2.0), (y / 2.0));
+		glUniformMatrix4fv(prog_cloud->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		glUniform2fv(prog_cloud->getUniform("cloud_offset"), 1, &cloud_offset[0]);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glBindVertexArray(0);
+
+		/*T = glm::translate(glm::mat4(1), glm::vec3(0, 0.3, 0));
+		S = glm::scale(glm::mat4(1), glm::vec3(0.1, 0.1, 1));
+		M = S;
+		glUniformMatrix4fv(prog_cloud->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 10);*/
+		prog_cloud->unbind();
+		glEnable(GL_DEPTH_TEST);
+
 
 		// Save output to framebuffer
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);

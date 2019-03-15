@@ -1,7 +1,7 @@
 #version  430 core
-in vec4 vertPos;
-in vec3 vertNor;
-in vec2 vertTex;
+layout(location = 0) in vec4 vertPos;
+layout(location = 1) in vec3 vertNor;
+layout(location = 2) in vec2 vertTex;
 uniform mat4 M;
 out vec3 fragNor;
 out vec2 fragTex;
