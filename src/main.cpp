@@ -486,7 +486,7 @@ public:
 		glGenerateMipmap(GL_TEXTURE_2D);
 
 		//texture
-		str = resourceDirectory + "/lvl1.jpg";
+		str = resourceDirectory + "/lvl2_1.png";
 		strcpy(filepath, str.c_str());
 		data = stbi_load(filepath, &width, &height, &channels, 4);
 		glGenTextures(1, &wall_texture);
@@ -499,7 +499,7 @@ public:
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
-		str = resourceDirectory + "/lvl1normalscombined.jpg";
+		str = resourceDirectory + "/lvl2_1normalscombined.png";
 		strcpy(filepath, str.c_str());
 		data = stbi_load(filepath, &width, &height, &channels, 4);
 		glGenTextures(1, &wall_normal_texture);
@@ -793,8 +793,6 @@ public:
 		//done, unbind stuff
 		prog_wall->unbind();
 
-		//glDisable(GL_DEPTH_TEST);
-
 		// Draw mesh using GLSL
 		prog_cloud->bind();
 
@@ -886,7 +884,6 @@ public:
 		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 10);
 		glBindVertexArray(0);*/
 		prog_cloud->unbind();
-		//glEnable(GL_DEPTH_TEST);
 		
 
 		// Save output to framebuffer
@@ -941,7 +938,7 @@ public:
 		if (pass_number == 2) {
 			double frametime = get_last_elapsed_time();
 			// Draw cursor
-			prog_fire->bind();
+			prog_mouse->bind();
 			glm::mat4 M, S, T, R;
 			T = glm::translate(glm::mat4(1), mouse_pos);
 			S = glm::scale(glm::mat4(1), glm::vec3(0.025 * 2, 0.05 * 2, 0.05));
@@ -949,13 +946,13 @@ public:
 			M = T * S * R;
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, fire_texture);
-			update_fire_tex(frametime);
-			glUniform1f(prog_fire->getUniform("t"), t);
-			glUniform2fv(prog_fire->getUniform("to"), 1, &fire_to.x);
-			glUniform2fv(prog_fire->getUniform("to2"), 1, &fire_to2.x);
+			//update_fire_tex(frametime);
+			//glUniform1f(prog_fire->getUniform("t"), t);
+			//glUniform2fv(prog_fire->getUniform("to"), 1, &fire_to.x);
+			//glUniform2fv(prog_fire->getUniform("to2"), 1, &fire_to2.x);
 			glUniformMatrix4fv(prog_fire->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-			mouse->draw(prog_fire);
-			prog_fire->unbind();
+			mouse->draw(prog_mouse);
+			prog_mouse->unbind();
 
 			// Save output to framebuffer
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
