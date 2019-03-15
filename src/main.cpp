@@ -808,16 +808,52 @@ public:
 		glUniformMatrix4fv(prog_cloud->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		glUniform2fv(prog_cloud->getUniform("cloud_offset"), 1, &cloud_offset[0]);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
-		glBindVertexArray(0);
 
-		/*T = glm::translate(glm::mat4(1), glm::vec3(0, 0.3, 0));
+		T = glm::translate(glm::mat4(1), glm::vec3(0.5, -0.3, 0));
+		M = T * S;
+		cloud_offset = glm::vec2(0.0);
+		x = 1, y = 0;
+		glUniformMatrix4fv(prog_cloud->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		glUniform2fv(prog_cloud->getUniform("cloud_offset"), 1, &cloud_offset[0]);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		T = glm::translate(glm::mat4(1), glm::vec3(0.6, -0.3, 0));
+		M = T * S;
+		x = 1;
+		y = 1;
+		cloud_offset = glm::vec2((x / 2.0), y / (2.0));
+		glUniformMatrix4fv(prog_cloud->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		glUniform2fv(prog_cloud->getUniform("cloud_offset"), 1, &cloud_offset[0]);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		T = glm::translate(glm::mat4(1), glm::vec3(0.55, -0.2, 0));
+		M = T * S;
+		x = 0;
+		y = 0;
+		cloud_offset = glm::vec2((x / 2.0), (y / 2.0));
+		glUniformMatrix4fv(prog_cloud->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		glUniform2fv(prog_cloud->getUniform("cloud_offset"), 1, &cloud_offset[0]);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		T = glm::translate(glm::mat4(1), glm::vec3(0.55, -0.4, 0));
+		M = T * S;
+		x = 0;
+		y = 1;
+		cloud_offset = glm::vec2((x / 2.0), (y / 2.0));
+		glUniformMatrix4fv(prog_cloud->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		glUniform2fv(prog_cloud->getUniform("cloud_offset"), 1, &cloud_offset[0]);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glBindVertexArray(0);
+		/*
+		T = glm::translate(glm::mat4(1), glm::vec3(0, 0.3, 0));
 		S = glm::scale(glm::mat4(1), glm::vec3(0.1, 0.1, 1));
 		M = S;
 		glUniformMatrix4fv(prog_cloud->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 10);*/
+		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 10);
+		glBindVertexArray(0);
 		prog_cloud->unbind();
 		glEnable(GL_DEPTH_TEST);
-
+		*/
 
 		// Save output to framebuffer
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
