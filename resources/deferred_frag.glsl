@@ -100,20 +100,62 @@ void main()
 			// Convert float to int
 			atomicMin(angle_list[i].y, distance_converted);
 			memoryBarrier();
+		   
 		}
 
 		else {
 			if (angle_list[i].y > (distance_converted - 500.00))
 			{
+				
 				float d = abs(angle_list[i].y - distance_converted) / 500.;
 				d = pow(1 - d, 2);
 				color.rgb = texturecolor * d;
 				//diffuse light
 				vec3 lp = vec3(lightpos.xy, 0);
 				vec3 ld = normalize(lp - world_pos);
-				float light = dot(ld, normals);
-				light = clamp(light, 0, 1);
-				color.rgb = texturecolor * d*light;
+				if(normals.r!=0){
+					float light = dot(ld, normals);
+					light = clamp(light, 0, 1);
+					color.rgb = texturecolor * d*light;
+				}
+				
+				if(normals.r==0 && color.r!=0){
+					vec2 texCoord = world_pos.xy;
+					// Calculate vector from pixel to light source in screen space.
+					vec2 deltaTexCoord = normalize(lightpos.xy-texCoord);
+  
+					float Density = 0.5;
+  
+					// Divide by number of samples and scale by control factor.
+					deltaTexCoord *= 1.0f / 3 * Density;
+
+					// Set up illumination decay factor.
+					float illuminationDecay = 1.0f;
+   
+					// Evaluate summation from Equation 3 NUM_SAMPLES iterations.
+					for (int i = 0; i < 3; i++)
+					{
+						// Step sample location along ray.
+						texCoord -= deltaTexCoord;
+					
+	
+						// Retrieve sample at new location.
+						vec3 texturecolor2 = texture(col_tex,texCoord).rgb;
+   
+						// Apply sample attenuation scale/decay factors.
+						texturecolor2 *= illuminationDecay*0.1f;
+					
+						// Accumulate combined color.
+						texturecolor += texturecolor2;
+
+						// Update exponential decay factor.
+						illuminationDecay *= (0.5);
+	
+					}
+  
+					// Output final color with a further scale control factor.
+					color.rgb = (texturecolor*0.75f)*d;
+				}
 			}
 			else {
 				color.rgb = vec3(0, 0, 0);
@@ -122,6 +164,7 @@ void main()
 		
 	}
 	//color.rgb = texturecolor;
+
 	norm_out = vec4(normals, 1);
 	pos_out = vec4(world_pos, 1);
 }

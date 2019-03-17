@@ -256,6 +256,7 @@ public:
 		prog_cloud->init();
 		prog_cloud->addUniform("M");
 		prog_cloud->addUniform("cloud_offset");
+		prog_deferred->addUniform("light_pos");
 		prog_cloud->addAttribute("vertPos");
 		prog_cloud->addAttribute("vertNor");
 		prog_cloud->addAttribute("vertTex");
@@ -801,19 +802,22 @@ public:
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, cloud_normal_texture);
 
+		glUniform3fv(prog_cloud->getUniform("light_pos"), 1, &mouse_pos.x);
+
+
 		glDisable(GL_DEPTH_TEST);
 
 		glBindVertexArray(VertexArrayIDBox2);
-		
+
 		T = glm::translate(glm::mat4(1), glm::vec3(0.05, 0.3, 0));
 		S = glm::scale(glm::mat4(1), glm::vec3(0.1, 0.1, 1));
-		M = T*S;
+		M = T * S;
 		static glm::vec2 cloud_offset = glm::vec2(0.0);
 		static int x = 0, y = 0;
 		glUniformMatrix4fv(prog_cloud->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		glUniform2fv(prog_cloud->getUniform("cloud_offset"), 1, &cloud_offset[0]);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
-		
+
 		T = glm::translate(glm::mat4(1), glm::vec3(0.15, 0.3, 0));
 		M = T * S;
 		x = 1;
@@ -823,7 +827,7 @@ public:
 		glUniform2fv(prog_cloud->getUniform("cloud_offset"), 1, &cloud_offset[0]);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		T = glm::translate(glm::mat4(1), glm::vec3(0.1, 0.4, 0));
+		T = glm::translate(glm::mat4(1), glm::vec3(0.1, 0.35, 0));
 		M = T * S;
 		x = 0;
 		y = 1;
@@ -832,7 +836,7 @@ public:
 		glUniform2fv(prog_cloud->getUniform("cloud_offset"), 1, &cloud_offset[0]);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		T = glm::translate(glm::mat4(1), glm::vec3(0.1, 0.2, 0));
+		T = glm::translate(glm::mat4(1), glm::vec3(0.1, 0.25, 0));
 		M = T * S;
 		x = 1;
 		y = 1;
@@ -858,7 +862,7 @@ public:
 		glUniform2fv(prog_cloud->getUniform("cloud_offset"), 1, &cloud_offset[0]);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		T = glm::translate(glm::mat4(1), glm::vec3(0.55, -0.2, 0));
+		T = glm::translate(glm::mat4(1), glm::vec3(0.55, -0.25, 0));
 		M = T * S;
 		x = 0;
 		y = 0;
@@ -867,7 +871,7 @@ public:
 		glUniform2fv(prog_cloud->getUniform("cloud_offset"), 1, &cloud_offset[0]);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		T = glm::translate(glm::mat4(1), glm::vec3(0.55, -0.4, 0));
+		T = glm::translate(glm::mat4(1), glm::vec3(0.55, -0.35, 0));
 		M = T * S;
 		x = 0;
 		y = 1;
@@ -884,7 +888,6 @@ public:
 		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 10);
 		glBindVertexArray(0);*/
 		prog_cloud->unbind();
-		
 
 		// Save output to framebuffer
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -937,9 +940,11 @@ public:
 
 		if (pass_number == 2) {
 			double frametime = get_last_elapsed_time();
+			glm::mat4 M, S, T, R;
+
+
 			// Draw cursor
 			prog_mouse->bind();
-			glm::mat4 M, S, T, R;
 			T = glm::translate(glm::mat4(1), mouse_pos);
 			S = glm::scale(glm::mat4(1), glm::vec3(0.025 * 2, 0.05 * 2, 0.05));
 			R = glm::rotate(glm::mat4(1), glm::radians(180.f), glm::vec3(0, 0, 1));
