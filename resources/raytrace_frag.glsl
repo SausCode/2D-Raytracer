@@ -7,7 +7,7 @@ layout(location = 1) uniform sampler2D pos_tex;
 layout(location = 2) uniform sampler2D norm_tex;
 layout(location = 3) uniform sampler2D no_light_tex;
 
-uniform int dovoxel;
+uniform int pass;
 uniform vec3 mouse_pos;
 
 struct traceInfo {
@@ -53,6 +53,8 @@ traceInfo cone_tracing(vec2 conedirection, vec2 pixelpos, float angle)
 		texpos = voxel_transform(pixelpos);
 		trace += sampling(conedirection, texpos, mip);
 		distanceFromConeOrigin += voxelSize;
+		if(trace.a>0.05)
+			break;
 	}
 	t.color = trace.rgb;
 	t.pos = texpos;
@@ -84,30 +86,14 @@ void main()
 	color.rgb = texturecolor;
 	if (world_pos != vec3(0))
 	{
-		switch (dovoxel)
+		switch (pass)
 		{
-			case 0:
+			case 1:
 				color.rgb = texturecolor;
 				break;
-			case 1:
-				color.rgb += multi_bounce(normals.xy, world_pos.xy, coneHalfAngle, 1);
-				break;
 			case 2:
-				color.rgb += multi_bounce(normals.xy, world_pos.xy, coneHalfAngle, 2);
-				break;
-			case 3:
-				color.rgb += multi_bounce(normals.xy, world_pos.xy, coneHalfAngle, 2);
-				color.rgb += multi_bounce(normals.xy + clamp(noise2(vec2(.1, .1)), -.1, .1), world_pos.xy, coneHalfAngle, 1);
-				color.rgb += multi_bounce(normals.xy + clamp(noise2(vec2(.1, -.1)), -.1, .1), world_pos.xy, coneHalfAngle, 1);
-				color.rgb += multi_bounce(normals.xy + clamp(noise2(vec2(-.1, .1)), -.1, .1), world_pos.xy, coneHalfAngle, 1);
-				color.rgb += multi_bounce(normals.xy + clamp(noise2(vec2(-.1, -.1)), -.1, .1), world_pos.xy, coneHalfAngle, 1);
-				break;
-			case 4:
-				color.rgb += multi_bounce(normals.xy, world_pos.xy, coneHalfAngle, 2);
-				color.rgb += multi_bounce(normals.xy + clamp(noise2(vec2(.1, .1)), -.1, .1), world_pos.xy, coneHalfAngle, 2);
-				color.rgb += multi_bounce(normals.xy + clamp(noise2(vec2(.1, -.1)), -.1, .1), world_pos.xy, coneHalfAngle, 2);
-				color.rgb += multi_bounce(normals.xy + clamp(noise2(vec2(-.1, .1)), -.1, .1), world_pos.xy, coneHalfAngle, 2);
-				color.rgb += multi_bounce(normals.xy + clamp(noise2(vec2(-.1, -.1)), -.1, .1), world_pos.xy, coneHalfAngle, 2);
+				color.rgb += multi_bounce(normals.xy, world_pos.xy, coneHalfAngle, 1);
+				//color.rgb = texturecolor + (cone_tracing(normals.xy, world_pos.xy, coneHalfAngle)).color;
 				break;
 		}
 	}

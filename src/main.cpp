@@ -1,8 +1,3 @@
-/* Lab 6 base code - transforms using local matrix functions
-to be written by students -
-based on lab 5 by CPE 471 Cal Poly Z. Wood + S. Sueda
-& Ian Dunn, Christian Eckhardt
-*/
 #include <iostream>
 #include <glad/glad.h>
 
@@ -101,7 +96,7 @@ public:
 		}
 		if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE)
 		{
-			if (voxeltoggle++ > 3)
+			if (voxeltoggle++ > 0)
 			{
 				voxeltoggle = 0;
 			}
@@ -221,7 +216,7 @@ public:
 		prog_raytrace->init();
 		prog_raytrace->addAttribute("vertPos");
 		prog_raytrace->addAttribute("vertTex");
-		prog_raytrace->addUniform("dovoxel");
+		prog_raytrace->addUniform("pass");
 		prog_raytrace->addUniform("mouse_pos");
 
 		// Initialize the GLSL program.
@@ -450,7 +445,7 @@ public:
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
-		str = resourceDirectory + "/clouds_sprite_normal2.png";
+		str = resourceDirectory + "/clouds_sprite_normal3.png";
 		strcpy(filepath, str.c_str());
 		data = stbi_load(filepath, &width, &height, &channels, 4);
 		glGenTextures(1, &cloud_normal_texture);
@@ -487,7 +482,7 @@ public:
 		glGenerateMipmap(GL_TEXTURE_2D);
 
 		//texture
-		str = resourceDirectory + "/lvl2_1.png";
+		str = resourceDirectory + "/lvl1.jpg";
 		strcpy(filepath, str.c_str());
 		data = stbi_load(filepath, &width, &height, &channels, 4);
 		glGenTextures(1, &wall_texture);
@@ -500,7 +495,7 @@ public:
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
-		str = resourceDirectory + "/lvl2_1normalscombined.png";
+		str = resourceDirectory + "/lvl1normalscombined.jpg";
 		strcpy(filepath, str.c_str());
 		data = stbi_load(filepath, &width, &height, &channels, 4);
 		glGenTextures(1, &wall_normal_texture);
@@ -1012,7 +1007,7 @@ public:
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		prog_raytrace->bind();
-		glUniform1i(prog_raytrace->getUniform("dovoxel"), voxeltoggle);
+		glUniform1i(prog_raytrace->getUniform("pass"), pass_number);
 		glUniform3fv(prog_raytrace->getUniform("mouse_pos"), 1, &mouse_pos.x);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, FBOcol2);
@@ -1070,7 +1065,16 @@ int main(int argc, char **argv)
 		application->render_deferred();
 		application->pass_number = 2;
 		application->render_deferred();
-		application->render_to_screen();
+		if (application->voxeltoggle == 0) {
+			application->pass_number = 1;
+			application->render_to_screen();
+		}
+		else {
+			application->pass_number = 1;
+			application->render_to_screen();
+			application->pass_number = 2;
+			application->render_to_screen();
+		}
 		// Swap front and back buffers.
 		glfwSwapBuffers(windowManager->getHandle());
 		// Poll for and process events.

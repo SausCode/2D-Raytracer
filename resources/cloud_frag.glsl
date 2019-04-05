@@ -18,48 +18,19 @@ layout(location = 1) uniform sampler2D tex2;
 
  void main()
 {
-	vec4 texturecolor = texture(tex, fragTex +cloud_offset);
+	vec4 texturecolor = texture(tex, fragTex+cloud_offset);
+	vec4 normalfromtex = texture(tex2, fragTex+cloud_offset);
+	vec3 texturenormal = (normalfromtex.rgb - vec3(0.5, 0.5, 0.5));
+	texturenormal = texturenormal * 2.0;
+	vec3 ey = normalize(fragNor);
+	vec3 ez = vec3(0, 0, 1);
+	vec3 ex = cross(ez, ey);
+	mat3 TBN = mat3(ex, ey, ez);
+	vec3 readynormal = normalize(TBN*texturenormal);
 	pos_out = worldPos;
 	color = texturecolor;
-
-/*
-	vec2 texCoord = fragTex+cloud_offset;
-  // Calculate vector from pixel to light source in screen space.
-  vec2 deltaTexCoord = (texCoord - light_pos.xy);
-  
-   float Density = 0.5;
-  
-  // Divide by number of samples and scale by control factor.
-  deltaTexCoord *= 1.0f / 3 * Density;
-  
-  // Store initial sample.
-   vec4 texturecolor = texture(tex, fragTex + cloud_offset);
-
-  // Set up illumination decay factor.
-   float illuminationDecay = 1.0f;
-   
-  // Evaluate summation from Equation 3 NUM_SAMPLES iterations.
-   for (int i = 0; i < 3; i++)
-  {
-    // Step sample location along ray.
-    texCoord -= deltaTexCoord;
-
-	
-    // Retrieve sample at new location.
-   vec4 texturecolor2 = texture(tex,texCoord);
-   
-    // Apply sample attenuation scale/decay factors.
-    texturecolor2 *= illuminationDecay * 0.1;
-
-    // Accumulate combined color.
-    texturecolor += texturecolor2;
-
-    // Update exponential decay factor.
-    illuminationDecay *= (0.2);
-	
-  }
-  
-  // Output final color with a further scale control factor.
-   color = ( texturecolor * 0.75f);
-   */
+	if(color.r!=0)
+		norm_out = vec4(readynormal, 1);
+	else
+		norm_out = vec4(readynormal, 0);
 }

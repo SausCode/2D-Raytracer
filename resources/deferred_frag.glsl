@@ -24,6 +24,11 @@ uniform vec3 campos;
 uniform int screen_width;
 uniform int screen_height;
 
+const float Exposure = 0.0034f;
+const float Decay = 1.0f;
+const float Density = 0.84f;
+const float Weight = 5.65f;	
+
 float map(float x, float in_min, float in_max, float out_min, float out_max)
 {
 	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
@@ -109,53 +114,14 @@ void main()
 				
 				float d = abs(angle_list[i].y - distance_converted) / 500.;
 				d = pow(1 - d, 2);
-				color.rgb = texturecolor * d;
+				
 				//diffuse light
 				vec3 lp = vec3(lightpos.xy, 0);
 				vec3 ld = normalize(lp - world_pos);
-				if(normals.r!=0){
-					float light = dot(ld, normals);
-					light = clamp(light, 0, 1);
-					color.rgb = texturecolor * d*light;
-				}
+				float light = dot(ld, normals);
+				light = clamp(light, 0, 1);
+				color.rgb =texturecolor*d*light;
 				
-				if(normals.r==0 && color.r!=0){
-					vec2 texCoord = world_pos.xy;
-					// Calculate vector from pixel to light source in screen space.
-					vec2 deltaTexCoord = normalize(lightpos.xy-texCoord);
-  
-					float Density = 0.5;
-  
-					// Divide by number of samples and scale by control factor.
-					deltaTexCoord *= 1.0f / 3 * Density;
-
-					// Set up illumination decay factor.
-					float illuminationDecay = 1.0f;
-   
-					// Evaluate summation from Equation 3 NUM_SAMPLES iterations.
-					for (int i = 0; i < 3; i++)
-					{
-						// Step sample location along ray.
-						texCoord -= deltaTexCoord;
-					
-	
-						// Retrieve sample at new location.
-						vec3 texturecolor2 = texture(col_tex,texCoord).rgb;
-   
-						// Apply sample attenuation scale/decay factors.
-						texturecolor2 *= illuminationDecay*0.1f;
-					
-						// Accumulate combined color.
-						texturecolor += texturecolor2;
-
-						// Update exponential decay factor.
-						illuminationDecay *= (0.5);
-	
-					}
-  
-					// Output final color with a further scale control factor.
-					color.rgb = (texturecolor*0.75f)*d;
-				}
 			}
 			else {
 				color.rgb = vec3(0, 0, 0);
