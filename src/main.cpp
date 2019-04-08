@@ -22,6 +22,8 @@ using namespace glm;
 #define ssbo_size 2048
 #define FPS 60
 
+#define NUM_CLOUDS 100;
+
 double get_last_elapsed_time() {
 	static double lasttime = glfwGetTime();
 	double actualtime = glfwGetTime();
@@ -84,9 +86,13 @@ public:
 	glm::vec3 mouse_pos;
 	glm::vec2 fire_to = glm::vec2(0);
 	glm::vec2 fire_to2 = glm::vec2(0);
+	glm::vec2 cloud_offsets[100];
+	glm::vec2 positions[100];
 	double time = 0.0;
 	float t = 0.0;
 	int voxeltoggle = 0;
+	float pi = 3.14159625;
+	float pi_half = pi / 2.;
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
@@ -252,10 +258,11 @@ public:
 		prog_cloud->addUniform("M");
 		prog_cloud->addUniform("cloud_offset");
 		prog_deferred->addUniform("light_pos");
+		prog_cloud->addUniform("InstancePos");
 		prog_cloud->addAttribute("vertPos");
 		prog_cloud->addAttribute("vertNor");
 		prog_cloud->addAttribute("vertTex");
-		prog_cloud->addAttribute("InstancePos");
+		//prog_cloud->addAttribute("InstancePos");
 	}
 
 	void initGeom(const std::string& resourceDirectory)
@@ -332,23 +339,7 @@ public:
 		glEnableVertexAttribArray(0);
 		//key function to get up how many elements to pull out at a time (3)
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-		/*
-		//color
-		GLfloat* cloud_norm = new GLfloat[12];
-		int normc = 0;
-		cloud_norm[normc++] = 0, cloud_norm[normc++] = (1.0 / 2);
-		cloud_norm[normc++] = (1.0 / 2), cloud_norm[normc++] = (1.0 / 2);
-		cloud_norm[normc++] = 0, cloud_norm[normc++] = 0;
-		cloud_norm[normc++] = (1.0 / 2), cloud_norm[normc++] = (1.0 / 2);
-		cloud_norm[normc++] = (1.0 / 2), cloud_norm[normc++] = 0;
-		cloud_norm[normc++] = 0, cloud_norm[normc++] = 0;
-		glGenBuffers(1, &VertexNormDBox2);
-		//set the current state to focus on our vertex buffer
-		glBindBuffer(GL_ARRAY_BUFFER, VertexNormDBox2);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(float), cloud_norm, GL_STATIC_DRAW);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-		*/
+
 		glGenBuffers(1, &VertexNormDBox2);
 		//set the current state to focus on our vertex buffer
 		glBindBuffer(GL_ARRAY_BUFFER, VertexNormDBox2);
@@ -361,7 +352,6 @@ public:
 			1.0, 0.0, 0.0,
 			1.0, 0.0, 0.0,
 			1.0, 0.0, 0.0
-
 		};
 
 		glBufferData(GL_ARRAY_BUFFER, sizeof(cube_norm), cube_norm, GL_STATIC_DRAW);
@@ -388,6 +378,8 @@ public:
 		//key function to get up how many elements to pull out at a time (3)
 		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
+		calculate_instance_pos();
+
 		// Initialize mesh.
 		wall = make_shared<Shape>();
 		wall->loadMesh(resourceDirectory + "/internet_square.obj");
@@ -400,35 +392,57 @@ public:
 		mouse->resize();
 		mouse->init();
 
+	/*
 		//generate vertex buffer to hand off to OGL
 		glGenBuffers(1, &InstanceBuffer);
 		//set the current state to focus on our vertex buffer
 		glBindBuffer(GL_ARRAY_BUFFER, InstanceBuffer);
-		glm::vec4* positions = new glm::vec4[10];
-		for (int i = 0; i < 10; i++) {
-			float pos = i / 10.f;
-			positions[i] = glm::vec4(pos, 0.0f, 0.0f, 0.0f);
-			cout << positions[i].x << ", " << positions[i].y << endl;
+		GLfloat positions[] = { 0.0f, 10.f,0.2f,0.3f,0.4f };
+		//glm::vec4* positions = new glm::vec4[NUM_CLOUDS];
+		
+		for (int i = 0; i < NUM_CLOUDS; i += 1)
+		{
+			float radius_x = (float)rand() / (float)INT_MAX;
+			float radius_y = (float)rand() / (float)INT_MAX;
+			float radius_z = (float)rand() / (float)INT_MAX;
+			//float theta = (float)i * 2.0 * 3.14159 / NUM_CLOUDS; // angle around the y axis
+			float theta = (2.0 * 3.14159) * ((float)rand() / (float)INT_MAX); // angle around the y axis
+			float phi = (3.14159) * ((float)rand() / (float)INT_MAX) - (0.5 * 3.14159); // angle around the y axis
+
+			float x = GALAXY_RADIUS * radius_x * sin(theta) * cos(phi);
+			float y = GALAXY_RADIUS * radius_y / 2 * sin(theta) * sin(phi);
+			float z = GALAXY_RADIUS * radius_z * cos(theta);
+			positions[i] = glm::vec4(x, y, z, 0);
+			cout << positions[i] << endl;
+
 		}
 		//actually memcopy the data - only do this once
-		glBufferData(GL_ARRAY_BUFFER, 10 * sizeof(glm::vec4), positions, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, NUM_CLOUDS * sizeof(glm::vec4), positions, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(3);
+		glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 0, 0);
+		glVertexAttribDivisor(1, 1);
 
-		
 		int position_loc = glGetAttribLocation(prog_cloud->pid, "InstancePos");
-		for (int i = 0; i < 10; i++)
+		for (int i = 0; i < NUM_CLOUDS; i++)
 		{
 			// Set up the vertex attribute
 			glVertexAttribPointer(position_loc + i,              // Location
-				1, GL_FLOAT, GL_FALSE,       // vec4
+				4, GL_FLOAT, GL_FALSE,       // vec4
 				sizeof(vec4),                // Stride
 				(void*)(sizeof(vec4) * i)); // Start offset
 											 // Enable it
 			glEnableVertexAttribArray(position_loc + i);
 			// Make it instanced
-			glVertexAttribDivisor(position_loc + i, 0);
+			glVertexAttribDivisor(position_loc + i, 1);
 		}
 		
-
+		GLushort indices[] = { 0,1,2,1,3,2 };
+		GLuint indexArrayBufferID;
+		glGenBuffers(1, &indexArrayBufferID);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexArrayBufferID);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+		
+	*/
 		int width, height, channels;
 		char filepath[1000];
 
@@ -706,6 +720,27 @@ public:
 		mouse_pos.y *= -1;
 	}
 
+	void calculate_instance_pos() {
+		int x = 0, y = 0;
+		float rho = 0.0, phi = 0.0, m = 0.0, n = 0.0;
+
+		for (int i = 0; i < 100; i++) {
+			rho = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+			phi = static_cast <float> (rand()) / (static_cast <float> (2 * pi));
+			m = sqrt(rho) * cos(phi) *2.0*1.0;
+			n = sqrt(rho) * sin(phi) *2.0*1.0;
+			glm::vec2 pos = vec2(m+5.f, n);
+			x = rand() % 2;
+			y = rand() % 2;
+			glm::vec2 cloud_offset = glm::vec2((x / 2.0), y / (2.0));
+			
+			cloud_offsets[i] = cloud_offset;
+			positions[i] = pos;
+
+			cout << pos.x << ", " << pos.y << ", " << x << ", " << y << endl;
+		}
+	}
+
 	void render_to_texture() // aka render to framebuffer
 	{
 		glfwGetCursorPos(windowManager->windowHandle, &mouse_posX, &mouse_posY);
@@ -724,8 +759,6 @@ public:
 
 		auto P = std::make_shared<MatrixStack>();
 		glm::mat4 M, T, S, R;
-		float pi = 3.14159625;
-		float pi_half = pi / 2.;
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -789,6 +822,10 @@ public:
 		//done, unbind stuff
 		prog_wall->unbind();
 
+		/*
+			DRAW CLOUD
+		*/
+
 		// Draw mesh using GLSL
 		prog_cloud->bind();
 
@@ -798,90 +835,19 @@ public:
 		glBindTexture(GL_TEXTURE_2D, cloud_normal_texture);
 
 		glUniform3fv(prog_cloud->getUniform("light_pos"), 1, &mouse_pos.x);
-
-
-		glDisable(GL_DEPTH_TEST);
-
 		glBindVertexArray(VertexArrayIDBox2);
-
-		T = glm::translate(glm::mat4(1), glm::vec3(0.05, 0.3, 0));
+		glDisable(GL_DEPTH_TEST);
 		S = glm::scale(glm::mat4(1), glm::vec3(0.1, 0.1, 1));
-		M = T * S;
-		static glm::vec2 cloud_offset = glm::vec2(0.0);
-		static int x = 0, y = 0;
-		glUniformMatrix4fv(prog_cloud->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		glUniform2fv(prog_cloud->getUniform("cloud_offset"), 1, &cloud_offset[0]);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		for (int i = 0; i < 100; i++) {
+			glm::vec2 pos = positions[i];
+			glm::vec2 cloud_offset = cloud_offsets[i];
+			glUniform2fv(prog_cloud->getUniform("InstancePos"), 1, &pos[0]);
+			M = S;
+			glUniformMatrix4fv(prog_cloud->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+			glUniform2fv(prog_cloud->getUniform("cloud_offset"), 1, &cloud_offset[0]);
+			glDrawArrays(GL_TRIANGLES,0,6);
+		}
 
-		T = glm::translate(glm::mat4(1), glm::vec3(0.15, 0.3, 0));
-		M = T * S;
-		x = 1;
-		y = 0;
-		cloud_offset = glm::vec2((x / 2.0), y / (2.0));
-		glUniformMatrix4fv(prog_cloud->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		glUniform2fv(prog_cloud->getUniform("cloud_offset"), 1, &cloud_offset[0]);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-
-		T = glm::translate(glm::mat4(1), glm::vec3(0.1, 0.35, 0));
-		M = T * S;
-		x = 0;
-		y = 1;
-		cloud_offset = glm::vec2((x / 2.0), (y / 2.0));
-		glUniformMatrix4fv(prog_cloud->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		glUniform2fv(prog_cloud->getUniform("cloud_offset"), 1, &cloud_offset[0]);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-
-		T = glm::translate(glm::mat4(1), glm::vec3(0.1, 0.25, 0));
-		M = T * S;
-		x = 1;
-		y = 1;
-		cloud_offset = glm::vec2((x / 2.0), (y / 2.0));
-		glUniformMatrix4fv(prog_cloud->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		glUniform2fv(prog_cloud->getUniform("cloud_offset"), 1, &cloud_offset[0]);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-
-		T = glm::translate(glm::mat4(1), glm::vec3(0.5, -0.3, 0));
-		M = T * S;
-		cloud_offset = glm::vec2(0.0);
-		x = 1, y = 0;
-		glUniformMatrix4fv(prog_cloud->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		glUniform2fv(prog_cloud->getUniform("cloud_offset"), 1, &cloud_offset[0]);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-
-		T = glm::translate(glm::mat4(1), glm::vec3(0.6, -0.3, 0));
-		M = T * S;
-		x = 1;
-		y = 1;
-		cloud_offset = glm::vec2((x / 2.0), y / (2.0));
-		glUniformMatrix4fv(prog_cloud->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		glUniform2fv(prog_cloud->getUniform("cloud_offset"), 1, &cloud_offset[0]);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-
-		T = glm::translate(glm::mat4(1), glm::vec3(0.55, -0.25, 0));
-		M = T * S;
-		x = 0;
-		y = 0;
-		cloud_offset = glm::vec2((x / 2.0), (y / 2.0));
-		glUniformMatrix4fv(prog_cloud->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		glUniform2fv(prog_cloud->getUniform("cloud_offset"), 1, &cloud_offset[0]);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-
-		T = glm::translate(glm::mat4(1), glm::vec3(0.55, -0.35, 0));
-		M = T * S;
-		x = 0;
-		y = 1;
-		cloud_offset = glm::vec2((x / 2.0), (y / 2.0));
-		glUniformMatrix4fv(prog_cloud->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		glUniform2fv(prog_cloud->getUniform("cloud_offset"), 1, &cloud_offset[0]);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-		glBindVertexArray(0);
-		/*
-		T = glm::translate(glm::mat4(1), glm::vec3(0, 0.3, 0));
-		S = glm::scale(glm::mat4(1), glm::vec3(0.1, 0.1, 1));
-		M = S;
-		glUniformMatrix4fv(prog_cloud->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 10);
-		glBindVertexArray(0);*/
 		prog_cloud->unbind();
 
 		// Save output to framebuffer
@@ -1065,6 +1031,7 @@ int main(int argc, char **argv)
 		application->render_deferred();
 		application->pass_number = 2;
 		application->render_deferred();
+		
 		if (application->voxeltoggle == 0) {
 			application->pass_number = 1;
 			application->render_to_screen();
@@ -1075,6 +1042,7 @@ int main(int argc, char **argv)
 			application->pass_number = 2;
 			application->render_to_screen();
 		}
+		
 		// Swap front and back buffers.
 		glfwSwapBuffers(windowManager->getHandle());
 		// Poll for and process events.
