@@ -93,6 +93,8 @@ public:
 	int voxeltoggle = 0;
 	float pi = 3.14159625;
 	float pi_half = pi / 2.;
+	vec2 cloud_center = { 5.0f, 0.0f };
+	float cloud_radius = 1.0;
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
@@ -106,7 +108,6 @@ public:
 			{
 				voxeltoggle = 0;
 			}
-			std::cout << "voxeltoggle = " << voxeltoggle << std::endl;
 		}
 		if (key == GLFW_KEY_D && action == GLFW_PRESS)
 		{
@@ -224,6 +225,10 @@ public:
 		prog_raytrace->addAttribute("vertTex");
 		prog_raytrace->addUniform("pass");
 		prog_raytrace->addUniform("mouse_pos");
+		prog_raytrace->addUniform("cloud_center");
+		prog_raytrace->addUniform("cloud_radius");
+		prog_raytrace->addUniform("screen_width");
+		prog_raytrace->addUniform("screen_height");
 
 		// Initialize the GLSL program.
 		prog_fire = make_shared<Program>();
@@ -459,7 +464,7 @@ public:
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
-		str = resourceDirectory + "/clouds_sprite_normal3.png";
+		str = resourceDirectory + "/clouds_sprite_normal4.jpg";
 		strcpy(filepath, str.c_str());
 		data = stbi_load(filepath, &width, &height, &channels, 4);
 		glGenTextures(1, &cloud_normal_texture);
@@ -727,17 +732,15 @@ public:
 		for (int i = 0; i < 100; i++) {
 			rho = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 			phi = static_cast <float> (rand()) / (static_cast <float> (2 * pi));
-			m = sqrt(rho) * cos(phi) *2.0*1.0;
-			n = sqrt(rho) * sin(phi) *2.0*1.0;
-			glm::vec2 pos = vec2(m+5.f, n);
+			m = sqrt(rho) * cos(phi) *cloud_radius*2.0;
+			n = sqrt(rho) * sin(phi) *cloud_radius*2.0;
+			glm::vec2 pos = vec2(m+cloud_center.x, n+cloud_center.y);
 			x = rand() % 2;
 			y = rand() % 2;
 			glm::vec2 cloud_offset = glm::vec2((x / 2.0), y / (2.0));
 			
 			cloud_offsets[i] = cloud_offset;
 			positions[i] = pos;
-
-			cout << pos.x << ", " << pos.y << ", " << x << ", " << y << endl;
 		}
 	}
 
@@ -975,6 +978,10 @@ public:
 		prog_raytrace->bind();
 		glUniform1i(prog_raytrace->getUniform("pass"), pass_number);
 		glUniform3fv(prog_raytrace->getUniform("mouse_pos"), 1, &mouse_pos.x);
+		glUniform2fv(prog_raytrace->getUniform("cloud_center"), 1, &cloud_center.x);
+		glUniform1f(prog_raytrace->getUniform("cloud_radius"), cloud_radius);
+		glUniform1i(prog_raytrace->getUniform("screen_width"), width);
+		glUniform1i(prog_raytrace->getUniform("screen_height"), height);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, FBOcol2);
 		glActiveTexture(GL_TEXTURE1);
@@ -987,6 +994,17 @@ public:
 		glBindVertexArray(VertexArrayIDBox);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		prog_raytrace->unbind();
+
+		if (pass_number == 1) {
+			// Save output to framebuffer
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glBindTexture(GL_TEXTURE_2D, FBOcol2);
+			glGenerateMipmap(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, FBOpos2);
+			glGenerateMipmap(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, FBOnorm2);
+			glGenerateMipmap(GL_TEXTURE_2D);
+		}
 	}
 };
 

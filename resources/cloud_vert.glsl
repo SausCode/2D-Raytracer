@@ -14,7 +14,7 @@ out vec4 worldPos;
 
 void main()
 {
-	vec4 pos = vec4(vertPos.x+InstancePos.x, vertPos.y+InstancePos.y, 0, 0);
+	vec4 pos = vec4(vertPos.x+InstancePos.x, vertPos.y+InstancePos.y, 0, 1.0);
 	worldPos = M * pos;
 	fragPos= (M * pos).xyz;
 	fragViewPos= M * pos;

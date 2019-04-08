@@ -24,11 +24,6 @@ uniform vec3 campos;
 uniform int screen_width;
 uniform int screen_height;
 
-const float Exposure = 0.0034f;
-const float Decay = 1.0f;
-const float Density = 0.84f;
-const float Weight = 5.65f;	
-
 float map(float x, float in_min, float in_max, float out_min, float out_max)
 {
 	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
