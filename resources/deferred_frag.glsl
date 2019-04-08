@@ -124,7 +124,7 @@ void main()
 		}
 		
 	}
-	color.rgb = texturecolor;
+	//color.rgb = texturecolor;
 
 	norm_out = vec4(normals, 1);
 	pos_out = vec4(world_pos, 1);

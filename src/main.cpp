@@ -22,7 +22,7 @@ using namespace glm;
 #define ssbo_size 2048
 #define FPS 60
 
-#define NUM_CLOUDS 100;
+const int NUM_CLOUDS = 100;
 
 double get_last_elapsed_time() {
 	static double lasttime = glfwGetTime();
@@ -86,15 +86,15 @@ public:
 	glm::vec3 mouse_pos;
 	glm::vec2 fire_to = glm::vec2(0);
 	glm::vec2 fire_to2 = glm::vec2(0);
-	glm::vec2 cloud_offsets[100];
-	glm::vec2 positions[100];
+	glm::vec2 cloud_offsets[NUM_CLOUDS];
+	glm::vec2 positions[NUM_CLOUDS];
 	double time = 0.0;
 	float t = 0.0;
 	int voxeltoggle = 0;
 	float pi = 3.14159625;
 	float pi_half = pi / 2.;
-	vec2 cloud_center = { 5.0f, 0.0f };
-	float cloud_radius = 1.0;
+	vec2 cloud_center = { 4.75f, 0.0f };
+	float cloud_radius = 2.0;
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
@@ -729,11 +729,11 @@ public:
 		int x = 0, y = 0;
 		float rho = 0.0, phi = 0.0, m = 0.0, n = 0.0;
 
-		for (int i = 0; i < 100; i++) {
+		for (int i = 0; i < NUM_CLOUDS; i++) {
 			rho = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 			phi = static_cast <float> (rand()) / (static_cast <float> (2 * pi));
-			m = sqrt(rho) * cos(phi) *cloud_radius*2.0;
-			n = sqrt(rho) * sin(phi) *cloud_radius*2.0;
+			m = sqrt(rho) * cos(phi) *cloud_radius;
+			n = sqrt(rho) * sin(phi) *cloud_radius;
 			glm::vec2 pos = vec2(m+cloud_center.x, n+cloud_center.y);
 			x = rand() % 2;
 			y = rand() % 2;
@@ -841,7 +841,7 @@ public:
 		glBindVertexArray(VertexArrayIDBox2);
 		glDisable(GL_DEPTH_TEST);
 		S = glm::scale(glm::mat4(1), glm::vec3(0.1, 0.1, 1));
-		for (int i = 0; i < 100; i++) {
+		for (int i = 0; i < NUM_CLOUDS; i++) {
 			glm::vec2 pos = positions[i];
 			glm::vec2 cloud_offset = cloud_offsets[i];
 			glUniform2fv(prog_cloud->getUniform("InstancePos"), 1, &pos[0]);

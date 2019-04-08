@@ -28,16 +28,19 @@ vec2 voxel_transform(vec2 pos)
 
 int is_in_cloud(vec2 pix_pos, vec2 center, float radius)
 {
-	float pos_x = ((pix_pos.x/screen_width)*20)-10;
-	float pos_y = ((pix_pos.y/screen_height)*20)-10;
-	/*if(pos_x>=-10 && pos_x<=10 && pos_y>=-10 && pos_y<=10)
-		return 1;
-	else
-		return 0;*/
-	float top_x = pow(pos_x-center.x, 2.0);
-	float top_y = pow(pos_y-center.y, 2.0);
-	float r_sq = pow(radius, 2.0);
-	float c = (top_x/r_sq) + (top_y/r_sq);
+	if(pix_pos==vec2(0))
+		return 0;
+
+	vec2 trans_center = center;
+	trans_center.x /= (10.0f);
+	trans_center.y /= (10.0f);
+
+	float trans_radius = (radius+1.1f)/(10.0f);
+
+	vec2 dist = pix_pos - trans_center;
+	vec2 top_sq =  pow(dist, vec2(2.0f));
+	float r_sq = pow(trans_radius, 2.0f);
+	float c = ((top_sq.x)/r_sq) + ((top_sq.y)/r_sq);
 	if(c<=1.0)
 		return 1;
 	else
@@ -81,8 +84,11 @@ traceInfo cone_tracing(vec2 conedirection, vec2 pixelpos, float angle)
 		texpos = voxel_transform(pixelposition);
 		trace += sampling(conedirection, texpos, mip, pixelposition);
 		distanceFromConeOrigin += voxelSize;
-		if((trace.a>0.05) && (is_in_cloud(pixelpos, cloud_center, cloud_radius)==0))
-			break;
+		if((trace.a>0.25) && (is_in_cloud(pixelpos, cloud_center, cloud_radius)==0)){
+			t.color = vec3(1,0,0);
+			return t;
+		//	break;
+		}
 	}
 	t.color = trace.rgb;
 	t.pos = texpos;
@@ -112,15 +118,8 @@ void main()
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
 	vec3 voxelcolor;
 	color.rgb = texturecolor;
-	if(is_in_cloud(world_pos.xy, cloud_center, cloud_radius)==1){
-		color.rgb=vec3(1,0,0);
-		return;
-	}
-	else{
-		color.rgb=vec3(0,1,0);
-		return;
-	}
-	if (normals != vec3(0))
+
+	if (world_pos != vec3(0))
 	{
 		switch (pass)
 		{
@@ -128,8 +127,7 @@ void main()
 				color.rgb = texturecolor;
 				break;
 			case 2:
-				//color.rgb += multi_bounce(normals.xy, world_pos.xy, coneHalfAngle, 1);
-				color.rgb += cone_tracing(normals.xy, world_pos.xy, coneHalfAngle).color;
+				color.rgb += multi_bounce(normals.xy, world_pos.xy, coneHalfAngle, 1);
 				break;
 		}
 	}
