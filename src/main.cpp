@@ -66,7 +66,7 @@ public:
 	GLuint wall_texture, wall_normal_texture, fire_texture, cloud_texture, cloud_normal_texture;
 
 	// textures for position, color, and normal
-	GLuint fb, fb2, depth_rb, FBOpos, FBOcol, FBOnorm, FBOpos2, FBOcol2, FBOnorm2;
+	GLuint fb, fb2, depth_rb, FBOpos, FBOcol, FBOnorm, FBOmask, FBOpos2, FBOcol2, FBOnorm2, FBOmask2;
 
 	// Contains vertex information for OpenGL
 	GLuint VertexArrayID, VertexArrayID2;
@@ -262,7 +262,6 @@ public:
 		prog_cloud->init();
 		prog_cloud->addUniform("M");
 		prog_cloud->addUniform("cloud_offset");
-		prog_deferred->addUniform("light_pos");
 		prog_cloud->addUniform("InstancePos");
 		prog_cloud->addAttribute("vertPos");
 		prog_cloud->addAttribute("vertNor");
@@ -576,10 +575,21 @@ public:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
 
+		// Generate Mask Texture
+		glGenTextures(1, &FBOmask);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, FBOmask);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+
 		//Attach 2D texture to this FBO
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, FBOcol, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, FBOpos, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, FBOnorm, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, FBOmask, 0);
 
 		//-------------------------
 		glGenRenderbuffers(1, &depth_rb);
@@ -594,10 +604,11 @@ public:
 		int Tex1Loc = glGetUniformLocation(prog_deferred->pid, "col_tex");
 		int Tex2Loc = glGetUniformLocation(prog_deferred->pid, "pos_tex");
 		int Tex3Loc = glGetUniformLocation(prog_deferred->pid, "norm_tex");
-
+		int Tex4Loc = glGetUniformLocation(prog_deferred->pid, "mask_tex");
 		glUniform1i(Tex1Loc, 0);
 		glUniform1i(Tex2Loc, 1);
 		glUniform1i(Tex3Loc, 2);
+		glUniform1i(Tex4Loc, 3);
 
 		GLenum status;
 		status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -647,15 +658,27 @@ public:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
 
+		// Generate Mask Texture
+		glGenTextures(1, &FBOmask2);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, FBOmask2);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+
 		//Attach 2D texture to this FBO
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, FBOcol2, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, FBOpos2, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, FBOnorm2, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, FBOmask2, 0);
+
 
 		Tex1Loc = glGetUniformLocation(prog_raytrace->pid, "col_tex");
 		Tex2Loc = glGetUniformLocation(prog_raytrace->pid, "pos_tex");
 		Tex3Loc = glGetUniformLocation(prog_raytrace->pid, "norm_tex");
-		int Tex4Loc = glGetUniformLocation(prog_raytrace->pid, "no_light_tex");
+		Tex4Loc = glGetUniformLocation(prog_raytrace->pid, "mask_tex");
 		glUniform1i(Tex1Loc, 0);
 		glUniform1i(Tex2Loc, 1);
 		glUniform1i(Tex3Loc, 2);
@@ -861,6 +884,8 @@ public:
 		glGenerateMipmap(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, FBOnorm);
 		glGenerateMipmap(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, FBOmask);
+		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 
 	void render_deferred()
@@ -898,6 +923,8 @@ public:
 		glBindTexture(GL_TEXTURE_2D, FBOpos);
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, FBOnorm);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, FBOmask);
 		glBindVertexArray(VertexArrayIDBox);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		prog_deferred->unbind();
@@ -930,6 +957,8 @@ public:
 			glBindTexture(GL_TEXTURE_2D, FBOpos2);
 			glGenerateMipmap(GL_TEXTURE_2D);
 			glBindTexture(GL_TEXTURE_2D, FBOnorm2);
+			glGenerateMipmap(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, FBOmask2);
 			glGenerateMipmap(GL_TEXTURE_2D);
 		}
 	}
@@ -989,8 +1018,7 @@ public:
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, FBOnorm2);
 		glActiveTexture(GL_TEXTURE3);
-		// Send in no lighting texture to use for raytracing
-		glBindTexture(GL_TEXTURE_2D, FBOcol);
+		glBindTexture(GL_TEXTURE_2D, FBOmask2);
 		glBindVertexArray(VertexArrayIDBox);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		prog_raytrace->unbind();
@@ -1004,6 +1032,8 @@ public:
 			glGenerateMipmap(GL_TEXTURE_2D);
 			glBindTexture(GL_TEXTURE_2D, FBOnorm2);
 			glGenerateMipmap(GL_TEXTURE_2D);
+		//	glBindTexture(GL_TEXTURE_2D, FBOmask2);
+		//	glGenerateMipmap(GL_TEXTURE_2D);
 		}
 	}
 };

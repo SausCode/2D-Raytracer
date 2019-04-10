@@ -3,6 +3,7 @@
 layout(location = 0) out vec4 color;
 layout(location = 1) out vec4 pos_out;
 layout(location = 2) out vec4 norm_out;
+layout(location = 3) out vec4 mask_out;
 
 in vec3 fragPos;
 in vec2 fragTex;
@@ -11,7 +12,6 @@ in vec4 fragViewPos;
 in vec4 worldPos;
 
 uniform vec2 cloud_offset;
-uniform vec3 light_pos;
 
 layout(location = 0) uniform sampler2D tex;
 layout(location = 1) uniform sampler2D tex2;
@@ -27,10 +27,8 @@ layout(location = 1) uniform sampler2D tex2;
 	vec3 ex = cross(ez, ey);
 	mat3 TBN = mat3(ex, ey, ez);
 	vec3 readynormal = normalize(TBN*texturenormal);
+	mask_out = vec4(1,0,0,0);
 	pos_out = worldPos;
 	color = texturecolor;
-	if(color.r!=0)
-		norm_out = vec4(readynormal, 1);
-	else
-		norm_out = vec4(readynormal, 0);
+	norm_out = vec4(readynormal, 0);
 }

@@ -1,11 +1,17 @@
 #version 430
-out vec4 color;
+
 in vec2 fragTex;
+
+layout(location = 0) out vec4 color;
+layout(location = 1) out vec4 pos_out;
+layout(location = 2) out vec4 norm_out;
+//layout(location = 3) out vec4 mask_out;
+
 
 layout(location = 0) uniform sampler2D col_tex;
 layout(location = 1) uniform sampler2D pos_tex;
 layout(location = 2) uniform sampler2D norm_tex;
-layout(location = 3) uniform sampler2D no_light_tex;
+layout(location = 3) uniform sampler2D mask_tex;
 
 uniform int pass;
 uniform vec3 mouse_pos;
@@ -47,14 +53,14 @@ int is_in_cloud(vec2 pix_pos, vec2 center, float radius)
 		return 0;
 }
 
-vec4 sampling(vec2 conedirection, vec2 texposition, float mipmap, vec2 pixposition)
+vec4 sampling(vec2 conedirection, vec2 texposition, float mipmap, vec2 pixposition, float is_in_cloud)
 {
 	uint imip = uint(mipmap);
 	float linint = mipmap - float(imip);
 	vec4 colA = texture(col_tex, texposition.xy, imip);
 	vec4 colB = texture(col_tex, texposition.xy, imip + 1);
 	float d = 1.0;
-	if(is_in_cloud(pixposition, cloud_center, cloud_radius)==0)
+	if(is_in_cloud==0)
 	{
 		vec2 norm = -texture(norm_tex, texposition.xy, 1).xy;
 		d = dot(normalize(norm), normalize(conedirection));
@@ -65,7 +71,7 @@ vec4 sampling(vec2 conedirection, vec2 texposition, float mipmap, vec2 pixpositi
 	return col;
 }
 
-traceInfo cone_tracing(vec2 conedirection, vec2 pixelpos, float angle)
+traceInfo cone_tracing(vec2 conedirection, vec2 pixelpos, float angle, float is_in_cloud)
 {
 	traceInfo t;
 	conedirection = normalize(conedirection);
@@ -82,12 +88,10 @@ traceInfo cone_tracing(vec2 conedirection, vec2 pixelpos, float angle)
 		float mip = log2(coneDiameter / voxelSize);
 		pixelposition = pixelpos + conedirection * distanceFromConeOrigin;
 		texpos = voxel_transform(pixelposition);
-		trace += sampling(conedirection, texpos, mip, pixelposition);
+		trace += sampling(conedirection, texpos, mip, pixelposition, is_in_cloud);
 		distanceFromConeOrigin += voxelSize;
-		if((trace.a>0.25) && (is_in_cloud(pixelpos, cloud_center, cloud_radius)==0)){
-			t.color = vec3(1,0,0);
-			return t;
-		//	break;
+		if((trace.a>0.25) && is_in_cloud==0){
+			break;
 		}
 	}
 	t.color = trace.rgb;
@@ -95,16 +99,16 @@ traceInfo cone_tracing(vec2 conedirection, vec2 pixelpos, float angle)
 	return t;
 }
 
-vec3 multi_bounce(vec2 conedirection, vec2 pixelpos, float angle, float bounces)
+vec3 multi_bounce(vec2 conedirection, vec2 pixelpos, float angle, float bounces, float is_in_cloud)
 {
 	vec3 col;
 	traceInfo t;
-	t = cone_tracing(conedirection, pixelpos, angle);
+	t = cone_tracing(conedirection, pixelpos, angle, is_in_cloud);
 	col += t.color;
 	for (int i = 1; i < bounces; i++)
 	{
 		vec2 norm = texture(norm_tex, t.pos).rg;
-		col += cone_tracing(norm, t.pos, angle).color;
+		col += cone_tracing(norm, t.pos, angle, is_in_cloud).color;
 	}
 	return col / bounces;
 }
@@ -116,6 +120,7 @@ void main()
 	vec3 texturecolor = texture(col_tex, fragTex).rgb;
 	vec3 normals = texture(norm_tex, fragTex).rgb;
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
+	vec3 is_in_cloud = texture(mask_tex, fragTex).rgb;
 	vec3 voxelcolor;
 	color.rgb = texturecolor;
 
@@ -127,11 +132,17 @@ void main()
 				color.rgb = texturecolor;
 				break;
 			case 2:
-				color.rgb += multi_bounce(normals.xy, world_pos.xy, coneHalfAngle, 1);
+				color.rgb += multi_bounce(normals.xy, world_pos.xy, coneHalfAngle, 1, is_in_cloud.x);
 				break;
 		}
 	}
 	else
 		color.rgb = texturecolor;
-
+	
+	if(pass==1)
+	{
+		norm_out = vec4(normals, 1);
+		pos_out = vec4(world_pos, 1);
+	//	mask_out = vec4(is_in_cloud, 1);
+	}
 }

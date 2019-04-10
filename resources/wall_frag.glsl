@@ -3,6 +3,7 @@
 layout(location = 0) out vec4 color;
 layout(location = 1) out vec4 pos_out;
 layout(location = 2) out vec4 norm_out;
+layout(location = 3) out vec4 mask_out;
 
 in vec3 fragPos;
 in vec2 fragTex;
@@ -24,6 +25,7 @@ void main()
 	vec3 ex = cross(ez, ey);
 	mat3 TBN = mat3(ex, ey, ez);
 	vec3 readynormal = normalize(TBN*texturenormal);
+	mask_out = vec4(0,1,0,0);
 	pos_out = worldPos;
 	norm_out = vec4(readynormal, 1);
 	color = texturecolor;

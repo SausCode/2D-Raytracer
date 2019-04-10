@@ -10,12 +10,14 @@ layout(std430, binding = 0) volatile buffer shader_data
 layout(location = 0) out vec4 color;
 layout(location = 1) out vec4 pos_out;
 layout(location = 2) out vec4 norm_out;
+layout(location = 3) out vec4 mask_out;
 
 in vec2 fragTex;
 in vec3 fragNor;
 layout(location = 0) uniform sampler2D col_tex;
 layout(location = 1) uniform sampler2D pos_tex;
 layout(location = 2) uniform sampler2D norm_tex;
+layout(location = 3) uniform sampler2D mask_tex;
 
 // 1 for first, 2 for second
 uniform int pass;
@@ -73,6 +75,8 @@ void main()
 	vec3 texturecolor = texture(col_tex, fragTex).rgb;
 	vec3 normals = texture(norm_tex, fragTex).rgb;
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
+	vec3 cloud_pos = texture(mask_tex, fragTex).rgb;
+
 	normals *= -1;
 	vec2 fragpos = world_pos.xy;
 	vec3 lightpos = light_pos;
@@ -128,4 +132,5 @@ void main()
 
 	norm_out = vec4(normals, 1);
 	pos_out = vec4(world_pos, 1);
+	mask_out = vec4(cloud_pos, 1);
 }
