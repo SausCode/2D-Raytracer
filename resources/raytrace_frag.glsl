@@ -5,7 +5,7 @@ in vec2 fragTex;
 layout(location = 0) out vec4 color;
 layout(location = 1) out vec4 pos_out;
 layout(location = 2) out vec4 norm_out;
-//layout(location = 3) out vec4 mask_out;
+layout(location = 3) out vec4 mask_out;
 
 
 layout(location = 0) uniform sampler2D col_tex;
@@ -143,6 +143,6 @@ void main()
 	{
 		norm_out = vec4(normals, 1);
 		pos_out = vec4(world_pos, 1);
-	//	mask_out = vec4(is_in_cloud, 1);
+		mask_out = vec4(is_in_cloud, 1);
 	}
 }

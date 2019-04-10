@@ -1032,8 +1032,8 @@ public:
 			glGenerateMipmap(GL_TEXTURE_2D);
 			glBindTexture(GL_TEXTURE_2D, FBOnorm2);
 			glGenerateMipmap(GL_TEXTURE_2D);
-		//	glBindTexture(GL_TEXTURE_2D, FBOmask2);
-		//	glGenerateMipmap(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, FBOmask2);
+			glGenerateMipmap(GL_TEXTURE_2D);
 		}
 	}
 };
