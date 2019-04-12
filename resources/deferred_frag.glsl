@@ -136,5 +136,4 @@ void main()
 	norm_out = vec4(normals, 1);
 	pos_out = vec4(world_pos, 1);
 	mask_out = vec4(cloud_pos, 1);
-	//color = mask_out;
 }

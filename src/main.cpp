@@ -463,7 +463,7 @@ public:
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
-		str = resourceDirectory + "/clouds_sprite_normal4_1.png";
+		str = resourceDirectory + "/clouds_sprite_normal4_2.png";
 		strcpy(filepath, str.c_str());
 		data = stbi_load(filepath, &width, &height, &channels, 4);
 		glGenTextures(1, &cloud_normal_texture);

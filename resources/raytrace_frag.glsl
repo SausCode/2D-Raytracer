@@ -32,27 +32,6 @@ vec2 voxel_transform(vec2 pos)
 	return texpos;
 }
 
-int is_in_cloud(vec2 pix_pos, vec2 center, float radius)
-{
-	if(pix_pos==vec2(0))
-		return 0;
-
-	vec2 trans_center = center;
-	trans_center.x /= (10.0f);
-	trans_center.y /= (10.0f);
-
-	float trans_radius = (radius+1.1f)/(10.0f);
-
-	vec2 dist = pix_pos - trans_center;
-	vec2 top_sq =  pow(dist, vec2(2.0f));
-	float r_sq = pow(trans_radius, 2.0f);
-	float c = ((top_sq.x)/r_sq) + ((top_sq.y)/r_sq);
-	if(c<=1.0)
-		return 1;
-	else
-		return 0;
-}
-
 vec4 sampling(vec2 conedirection, vec2 texposition, float mipmap, vec2 pixposition, float is_in_cloud)
 {
 	uint imip = uint(mipmap);
