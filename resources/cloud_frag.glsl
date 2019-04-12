@@ -27,8 +27,8 @@ layout(location = 1) uniform sampler2D tex2;
 	vec3 ex = cross(ez, ey);
 	mat3 TBN = mat3(ex, ey, ez);
 	vec3 readynormal = normalize(TBN*texturenormal);
-	mask_out = vec4(1,0,0,0);
+	mask_out = vec4(1,0,0,1);
 	pos_out = worldPos;
 	color = texturecolor;
-	norm_out = vec4(readynormal, 0);
+	norm_out = vec4(readynormal, color.a);
 }

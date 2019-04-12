@@ -119,7 +119,10 @@ void main()
 				vec3 ld = normalize(lp - world_pos);
 				float light = dot(ld, normals);
 				light = clamp(light, 0, 1);
-				color.rgb =texturecolor*d*light;
+				if(cloud_pos.x==0)
+					color.rgb =texturecolor*d*light;
+				else
+					color.rgb=texturecolor*d;
 				
 			}
 			else {
@@ -133,4 +136,5 @@ void main()
 	norm_out = vec4(normals, 1);
 	pos_out = vec4(world_pos, 1);
 	mask_out = vec4(cloud_pos, 1);
+	//color = mask_out;
 }
