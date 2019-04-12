@@ -55,7 +55,6 @@ traceInfo cone_tracing(vec2 conedirection, vec2 pixelpos, float angle, float is_
 	traceInfo t;
 	conedirection = normalize(conedirection);
 	float voxelSize = 2. / 256.;
-	voxelSize = 0.01;
 	vec4 trace = vec4(0);
 	float distanceFromConeOrigin = voxelSize * 2;
 	float coneHalfAngle = angle;
@@ -68,7 +67,7 @@ traceInfo cone_tracing(vec2 conedirection, vec2 pixelpos, float angle, float is_
 		pixelposition = pixelpos + conedirection * distanceFromConeOrigin;
 		texpos = voxel_transform(pixelposition);
 		trace += sampling(conedirection, texpos, mip, pixelposition, is_in_cloud);
-		distanceFromConeOrigin += voxelSize;
+		distanceFromConeOrigin += voxelSize*3;
 		if((trace.a>0.25) && is_in_cloud==0){
 			break;
 		}
