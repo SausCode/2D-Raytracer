@@ -25,7 +25,7 @@ void main()
 	vec3 ex = cross(ez, ey);
 	mat3 TBN = mat3(ex, ey, ez);
 	vec3 readynormal = normalize(TBN*texturenormal);
-	mask_out = vec4(0,0,0,1);
+	mask_out = vec4(texturecolor.xyz,0);
 	pos_out = worldPos;
 	norm_out = vec4(readynormal, 1);
 	color = texturecolor;

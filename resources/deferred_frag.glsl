@@ -75,7 +75,7 @@ void main()
 	vec3 texturecolor = texture(col_tex, fragTex).rgb;
 	vec3 normals = texture(norm_tex, fragTex).rgb;
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
-	vec3 cloud_pos = texture(mask_tex, fragTex).rgb;
+	vec4 cloud_pos = texture(mask_tex, fragTex);
 
 	normals *= -1;
 	vec2 fragpos = world_pos.xy;
@@ -135,5 +135,5 @@ void main()
 
 	norm_out = vec4(normals, 1);
 	pos_out = vec4(world_pos, 1);
-	mask_out = vec4(cloud_pos, 1);
+	mask_out = cloud_pos;
 }

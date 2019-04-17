@@ -50,7 +50,7 @@ vec4 sampling(vec2 conedirection, vec2 texposition, float mipmap, vec2 pixpositi
 	return col;
 }
 
-traceInfo cone_tracing(vec2 conedirection, vec2 pixelpos, float angle, float is_in_cloud)
+traceInfo cone_tracing(vec2 conedirection, vec2 pixelpos, float angle,int stepcount, float is_in_cloud)
 {
 	traceInfo t;
 	conedirection = normalize(conedirection);
@@ -60,7 +60,7 @@ traceInfo cone_tracing(vec2 conedirection, vec2 pixelpos, float angle, float is_
 	float coneHalfAngle = angle;
 	vec2 texpos;
 	vec2 pixelposition;
-	for (int i = 0; i < 15; i++)
+	for (int i = 0; i < stepcount; i++)
 	{
 		float coneDiameter = 2 * tan(coneHalfAngle) * distanceFromConeOrigin;
 		float mip = log2(coneDiameter / voxelSize);
@@ -77,30 +77,18 @@ traceInfo cone_tracing(vec2 conedirection, vec2 pixelpos, float angle, float is_
 	return t;
 }
 
-vec3 multi_bounce(vec2 conedirection, vec2 pixelpos, float angle, float bounces, float is_in_cloud)
-{
-	vec3 col;
-	traceInfo t;
-	t = cone_tracing(conedirection, pixelpos, angle, is_in_cloud);
-	col += t.color;
-	for (int i = 1; i < bounces; i++)
-	{
-		vec2 norm = texture(norm_tex, t.pos).rg;
-		col += cone_tracing(norm, t.pos, angle, is_in_cloud).color;
-	}
-	return col / bounces;
-}
-
 void main()
 {
 	color.a = 1;
-	float coneHalfAngle = 0.05;
+	float coneHalfAngle = 0.25;
 	vec3 texturecolor = texture(col_tex, fragTex).rgb;
 	vec3 normals = texture(norm_tex, fragTex).rgb;
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
-	vec3 is_in_cloud = texture(mask_tex, fragTex).rgb;
+	vec4 is_in_cloud = texture(mask_tex, fragTex);
 	vec3 voxelcolor;
 	color.rgb = texturecolor;
+	
+	vec2 lightdirection = normalize(mouse_pos.xy - world_pos.xy);
 
 	if (world_pos != vec3(0))
 	{
@@ -110,7 +98,17 @@ void main()
 				color.rgb = texturecolor;
 				break;
 			case 2:
-				color.rgb += multi_bounce(normals.xy, world_pos.xy, coneHalfAngle, 1, is_in_cloud.x);
+			{
+			traceInfo t;
+			if(is_in_cloud.a==0)
+				t = cone_tracing(normals.xy, world_pos.xy, coneHalfAngle, 15,is_in_cloud.a);
+			else
+				{
+				t = cone_tracing(lightdirection, world_pos.xy, coneHalfAngle*5, 20, is_in_cloud.a);
+				t.color *= is_in_cloud.xyz;
+				}
+			color.rgb += t.color;
+			}
 				break;
 		}
 	}
@@ -121,6 +119,6 @@ void main()
 	{
 		norm_out = vec4(normals, 1);
 		pos_out = vec4(world_pos, 1);
-		mask_out = vec4(is_in_cloud, 1);
+		mask_out = is_in_cloud;
 	}
 }
