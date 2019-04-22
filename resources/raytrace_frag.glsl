@@ -13,6 +13,7 @@ layout(location = 1) uniform sampler2D pos_tex;
 layout(location = 2) uniform sampler2D norm_tex;
 layout(location = 3) uniform sampler2D mask_tex;
 
+
 uniform int pass;
 uniform vec3 mouse_pos;
 uniform vec2 cloud_center;
@@ -85,9 +86,9 @@ void main()
 	vec3 normals = texture(norm_tex, fragTex).rgb;
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
 	vec4 is_in_cloud = texture(mask_tex, fragTex);
+
 	vec3 voxelcolor;
 	color.rgb = texturecolor;
-	
 	vec2 lightdirection = normalize(mouse_pos.xy - world_pos.xy);
 
 	if (world_pos != vec3(0))
@@ -98,24 +99,26 @@ void main()
 				color.rgb = texturecolor;
 				break;
 			case 2:
-			{
-			traceInfo t;
-			if(is_in_cloud.a==0)
-				t = cone_tracing(normals.xy, world_pos.xy, coneHalfAngle, 15,is_in_cloud.a);
-			else
+				traceInfo t;
+				if(is_in_cloud.a==0)
+					t = cone_tracing(normals.xy, world_pos.xy, coneHalfAngle, 15,is_in_cloud.a);
+				else
 				{
-				t = cone_tracing(lightdirection, world_pos.xy, coneHalfAngle*5, 20, is_in_cloud.a);
-				t.color *= is_in_cloud.xyz;
+					t = cone_tracing(lightdirection, world_pos.xy, coneHalfAngle*5, 20, is_in_cloud.a);
+					t.color *= is_in_cloud.xyz;
 				}
-			color.rgb += t.color;
-			}
+				color.rgb += t.color;
+				break;
+
+			case 3:
+				color.rgb = texturecolor;
 				break;
 		}
 	}
 	else
 		color.rgb = texturecolor;
 	
-	if(pass==1)
+	if(pass<3)
 	{
 		norm_out = vec4(normals, 1);
 		pos_out = vec4(world_pos, 1);
