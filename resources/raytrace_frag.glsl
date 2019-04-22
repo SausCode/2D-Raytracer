@@ -110,12 +110,15 @@ void main()
 			color.rgb += t.color;
 			}
 				break;
+			case 3:
+				color.rgb=texturecolor;
+				break;
 		}
 	}
 	else
 		color.rgb = texturecolor;
 	
-	if(pass==1)
+	if(pass<3)
 	{
 		norm_out = vec4(normals, 1);
 		pos_out = vec4(world_pos, 1);
