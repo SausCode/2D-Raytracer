@@ -30,10 +30,6 @@ layout(location = 1) uniform sampler2D tex2;
 	mask_out = texturecolor;
 	pos_out = worldPos;
 	color = texturecolor;
-	//if(color.a>0.75)
-	//	color.a=0.75;
-	//if(color.a<0.25)
-	//	color.a=0;
 
 	readynormal *= 0.25f;
 	vec3 blue = vec3(0.498f, 0.498f, 1) *0.75f;

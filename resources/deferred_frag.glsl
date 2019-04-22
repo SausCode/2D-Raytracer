@@ -81,7 +81,7 @@ void main()
 	vec2 fragpos = world_pos.xy;
 	vec3 lightpos = light_pos;
 
-//	color.rgb = normals;
+	color.rgb = normals;
 	//return;
 	vec2 angle_range = fragTopAndBottomAngles(fragpos, lightpos);
 	float min_angle = angle_range.x;
@@ -101,7 +101,6 @@ void main()
 	for(int i=min_bufferindex; i<=max_bufferindex; i++){
 
 		if (pass == 1) {
-
 			// Convert float to int
 			atomicMin(angle_list[i].y, distance_converted);
 			memoryBarrier();
@@ -111,7 +110,6 @@ void main()
 		else {
 			if (angle_list[i].y > (distance_converted - 500.00))
 			{
-					
 				
 				float d = abs(angle_list[i].y - distance_converted) / 500.;
 				d = pow(1 - d, 2);
@@ -121,17 +119,15 @@ void main()
 				vec3 ld = normalize(lp - world_pos);
 				float light = dot(ld, normals);
 				light = clamp(light, 0, 1);
-			//	if(cloud_pos.a==0)
+				if(cloud_pos.x==0)
 					color.rgb =texturecolor*d*light;
-			//	else
-			//		color.rgb=texturecolor*d;
-
+				else
+					color.rgb=texturecolor*d;
 				
 			}
 			else {
 				color.rgb = vec3(0, 0, 0);
 			}
-
 		}
 		
 	}
