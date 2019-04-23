@@ -1030,9 +1030,9 @@ public:
 
 	void render_to_screen()
 	{
-		/*glBindFramebuffer(GL_FRAMEBUFFER, fb3);
+		glBindFramebuffer(GL_FRAMEBUFFER, fb3);
 		GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
-		glDrawBuffers(4, buffers);*/
+		glDrawBuffers(4, buffers);
 		// Get current frame buffer size.
 		int width, height;
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
@@ -1063,7 +1063,7 @@ public:
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		prog_raytrace->unbind();
 		// Save output to framebuffer
-		/*glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glBindTexture(GL_TEXTURE_2D, FBOcol3);
 		glGenerateMipmap(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, FBOpos3);
@@ -1071,7 +1071,7 @@ public:
 		glBindTexture(GL_TEXTURE_2D, FBOnorm3);
 		glGenerateMipmap(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, FBOmask3);
-		glGenerateMipmap(GL_TEXTURE_2D);*/
+		glGenerateMipmap(GL_TEXTURE_2D);
 
 	}
 };
@@ -1118,8 +1118,8 @@ int main(int argc, char **argv)
 		application->pass_number = 2;
 		application->render_deferred();
 		application->render_to_screen();
-		/*application->pass_number = 3;
-		application->render_deferred();*/
+		application->pass_number = 3;
+		application->render_deferred();
 		// Swap front and back buffers.
 		glfwSwapBuffers(windowManager->getHandle());
 		// Poll for and process events.

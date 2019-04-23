@@ -84,9 +84,10 @@ void main()
 	vec2 fragpos = world_pos.xy;
 	vec3 lightpos = light_pos;
 
-	color.rgb = texturecolor;
-//	color.rgb = normals;
-	//return;
+	//if(pass==3){
+	//	color.rgb = texturecolor;
+	//	return;
+	//}
 	vec2 angle_range = fragTopAndBottomAngles(fragpos, lightpos);
 	float min_angle = angle_range.x;
 	float max_angle = angle_range.y;
