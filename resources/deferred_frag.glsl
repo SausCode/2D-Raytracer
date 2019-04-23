@@ -77,10 +77,14 @@ void main()
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
 	vec4 cloud_pos = texture(mask_tex, fragTex);
 
-	normals *= -1;
+	if(pass<3){
+		normals *= -1;
+	}
+	
 	vec2 fragpos = world_pos.xy;
 	vec3 lightpos = light_pos;
 
+	color.rgb = texturecolor;
 //	color.rgb = normals;
 	//return;
 	vec2 angle_range = fragTopAndBottomAngles(fragpos, lightpos);
@@ -121,21 +125,25 @@ void main()
 				vec3 ld = normalize(lp - world_pos);
 				float light = dot(ld, normals);
 				light = clamp(light, 0, 1);
-				if(cloud_pos.x==0)
+				if(cloud_pos.a==0)
 					color.rgb =texturecolor*d*light;
 				else
 					color.rgb=texturecolor*d;
 				
+				
 			}
 			else {
 				color.rgb = vec3(0, 0, 0);
+
 			}
 		}
 		
 	}
 	//color.rgb = texturecolor;
 
-	norm_out = vec4(normals, 1);
-	pos_out = vec4(world_pos, 1);
-	mask_out = cloud_pos;
+	if(pass<3){
+		norm_out = vec4(normals, 1);
+		pos_out = vec4(world_pos, 1);
+		mask_out = cloud_pos;
+	}
 }

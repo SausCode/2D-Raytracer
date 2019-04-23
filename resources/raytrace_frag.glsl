@@ -92,36 +92,24 @@ void main()
 
 	if (world_pos != vec3(0))
 	{
-		switch (pass)
-		{
-			case 1:
-				color.rgb = texturecolor;
-				break;
-			case 2:
-			{
-			traceInfo t;
-			if(is_in_cloud.a==0)
-				t = cone_tracing(normals.xy, world_pos.xy, coneHalfAngle, 15,is_in_cloud.a);
-			else
-				{
-				t = cone_tracing(lightdirection, world_pos.xy, coneHalfAngle*5, 20, is_in_cloud.a);
-				t.color *= is_in_cloud.xyz;
-				}
-			color.rgb += t.color;
-			}
-				break;
-			case 3:
-				color.rgb=texturecolor;
-				break;
-		}
-	}
-	else
-		color.rgb = texturecolor;
 	
-	if(pass<3)
-	{
-		norm_out = vec4(normals, 1);
-		pos_out = vec4(world_pos, 1);
-		mask_out = is_in_cloud;
+		traceInfo t;
+		if(is_in_cloud.a==0)
+			t = cone_tracing(normals.xy, world_pos.xy, coneHalfAngle, 15,is_in_cloud.a);
+		else
+		{
+			t = cone_tracing(lightdirection, world_pos.xy, coneHalfAngle*5, 20, is_in_cloud.a);
+			t.color *= is_in_cloud.xyz;
+		}
+		color.rgb += t.color;
+		
+		//color.rgb=vec3(1,0,0);
 	}
+	
+	//color.rgb = texturecolor;
+	
+
+	norm_out = vec4(normals, 1);
+	pos_out = vec4(world_pos, 1);
+	mask_out = is_in_cloud;
 }
