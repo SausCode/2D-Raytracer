@@ -31,7 +31,7 @@ layout(location = 1) uniform sampler2D tex2;
 	pos_out = worldPos;
 	color = texturecolor;
 
-	readynormal *= 0.25f;
-	vec3 blue = vec3(0.498f, 0.498f, 1) *0.75f;
-	norm_out = vec4(readynormal, color.a) + vec4(blue, color.a);
+
+
+	norm_out = vec4(readynormal, color.a);
 }

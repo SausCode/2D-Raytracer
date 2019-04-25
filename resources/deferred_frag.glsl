@@ -20,7 +20,7 @@ layout(location = 2) uniform sampler2D norm_tex;
 layout(location = 3) uniform sampler2D mask_tex;
 
 // 1 for first, 2 for second
-uniform int pass;
+uniform int passRender;
 uniform vec3 light_pos;
 uniform vec3 campos;
 uniform int screen_width;
@@ -77,17 +77,21 @@ void main()
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
 	vec4 cloud_pos = texture(mask_tex, fragTex);
 
-	if(pass<3){
-		normals *= -1;
+	if (length(world_pos)<0.0001)
+	{
+		color = vec4(0);
+		norm_out = vec4(0);
+		pos_out = vec4(0);
+		mask_out = vec4(0);
+		return;
 	}
+
+
+	normals *= -1;
 	
 	vec2 fragpos = world_pos.xy;
 	vec3 lightpos = light_pos;
 
-	//if(pass==3){
-	//	color.rgb = texturecolor;
-	//	return;
-	//}
 	vec2 angle_range = fragTopAndBottomAngles(fragpos, lightpos);
 	float min_angle = angle_range.x;
 	float max_angle = angle_range.y;
@@ -106,16 +110,16 @@ void main()
 
 	for(int i=min_bufferindex; i<=max_bufferindex; i++){
 
-		if (pass == 1) {
+		if (passRender == 1) {
 			// Convert float to int
 			atomicMin(angle_list[i].y, distance_converted);
 			memoryBarrier();
 		   
 		}
 
-		else {
-
-			if (angle_list[i].y > (distance_converted - 500.00))
+		else 
+		{
+			if (angle_list[i].y > (distance_converted - 500.))
 			{
 				
 				float d = abs(angle_list[i].y - distance_converted) / 500.;
@@ -126,25 +130,20 @@ void main()
 				vec3 ld = normalize(lp - world_pos);
 				float light = dot(ld, normals);
 				light = clamp(light, 0, 1);
-				if(cloud_pos.a==0)
-					color.rgb =texturecolor*d*light;
-				else
-					color.rgb=texturecolor*d;
-				
+				color.rgb=texturecolor*d*light;
 				
 			}
 			else {
-				color.rgb = vec3(0, 0, 0);
+				color.rgb = vec3(0, 0, 0); 
 
 			}
+			
 		}
 		
 	}
-	//color.rgb = texturecolor;
-
-	if(pass<3){
-		norm_out = vec4(normals, 1);
-		pos_out = vec4(world_pos, 1);
-		mask_out = cloud_pos;
-	}
+	
+	norm_out = vec4(normals, 1);
+	pos_out = vec4(world_pos, 1);
+	mask_out = cloud_pos;
+	
 }

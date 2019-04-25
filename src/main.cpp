@@ -66,7 +66,7 @@ public:
 	GLuint wall_texture, wall_normal_texture, fire_texture, cloud_texture, cloud_normal_texture;
 
 	// textures for position, color, and normal
-	GLuint fb, fb2, fb3, depth_rb, depth_rb2, FBOpos, FBOcol, FBOnorm, FBOmask, FBOpos2, FBOcol2, FBOnorm2, FBOmask2, FBOpos3, FBOcol3, FBOnorm3, FBOmask3;
+	GLuint fb, fb2, fb3, fb4, depth_rb, FBOpos, FBOcol, FBOnorm, FBOmask, FBOpos2, FBOcol2, FBOnorm2, FBOmask2, FBOpos3, FBOcol3, FBOnorm3, FBOmask3, FBOpos4, FBOcol4, FBOnorm4, FBOmask4;
 
 	// Contains vertex information for OpenGL
 	GLuint VertexArrayID, VertexArrayID2;
@@ -203,7 +203,7 @@ public:
 		prog_deferred->init();
 		prog_deferred->addUniform("light_pos");
 		prog_deferred->addUniform("campos");
-		prog_deferred->addUniform("pass");
+		prog_deferred->addUniform("passRender");
 		prog_deferred->addUniform("screen_width");
 		prog_deferred->addUniform("screen_height");
 		prog_deferred->addAttribute("vertPos");
@@ -217,13 +217,13 @@ public:
 		if (!prog_raytrace->init())
 		{
 			std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
-			//exit(1);
+			exit(1);
 		}
 
 		prog_raytrace->init();
 		prog_raytrace->addAttribute("vertPos");
 		prog_raytrace->addAttribute("vertTex");
-		prog_raytrace->addUniform("pass");
+		prog_raytrace->addUniform("passRender");
 		prog_raytrace->addUniform("mouse_pos");
 		prog_raytrace->addUniform("cloud_center");
 		prog_raytrace->addUniform("cloud_radius");
@@ -412,7 +412,7 @@ public:
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
-		str = resourceDirectory + "/clouds_sprite_normal4_3.png";
+		str = resourceDirectory + "/clouds_sprite_normal4 (1).png";
 		strcpy(filepath, str.c_str());
 		data = stbi_load(filepath, &width, &height, &channels, 4);
 		glGenTextures(1, &cloud_normal_texture);
@@ -559,86 +559,7 @@ public:
 		glUniform1i(Tex4Loc, 3);
 
 
-		glUseProgram(prog_deferred->pid);
-		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
-		glGenFramebuffers(1, &fb3);
-		glBindFramebuffer(GL_FRAMEBUFFER, fb3);
-
-		// Generate Color Texture
-		glGenTextures(1, &FBOcol3);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, FBOcol3);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_BYTE, NULL);
-
-		// Generate Position Texture
-		glGenTextures(1, &FBOpos3);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, FBOpos3);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
-		glGenerateMipmap(GL_TEXTURE_2D);
-
-		// Generate Normal Texture
-		glGenTextures(1, &FBOnorm3);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, FBOnorm3);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
-
-		// Generate Mask Texture
-		glGenTextures(1, &FBOmask3);
-		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, FBOmask3);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
-
-		//Attach 2D texture to this FBO
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, FBOcol3, 0);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, FBOpos3, 0);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, FBOnorm3, 0);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, FBOmask3, 0);
-		//-------------------------
-		glGenRenderbuffers(1, &depth_rb2);
-		glBindRenderbuffer(GL_RENDERBUFFER, depth_rb2);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height);
-		//-------------------------
-		//Attach depth buffer to FBO
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rb2);
-
-		Tex1Loc = glGetUniformLocation(prog_deferred->pid, "col_tex");
-		Tex2Loc = glGetUniformLocation(prog_deferred->pid, "pos_tex");
-		Tex3Loc = glGetUniformLocation(prog_deferred->pid, "norm_tex");
-		Tex4Loc = glGetUniformLocation(prog_deferred->pid, "mask_tex");
-
-		glUniform1i(Tex1Loc, 0);
-		glUniform1i(Tex2Loc, 1);
-		glUniform1i(Tex3Loc, 2);
-		glUniform1i(Tex4Loc, 3);
-
-		GLenum status;
-		status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-		switch (status)
-		{
-		case GL_FRAMEBUFFER_COMPLETE:
-			cout << "status framebuffer: good" << endl;
-			break;
-		default:
-			cout << "status framebuffer: bad" << endl;
-		}
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		
 
 		glUseProgram(prog_raytrace->pid);
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
@@ -703,6 +624,131 @@ public:
 		glUniform1i(Tex4Loc, 3);
 
 
+		glUseProgram(prog_raytrace->pid);
+		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
+		glGenFramebuffers(1, &fb3);
+		glBindFramebuffer(GL_FRAMEBUFFER, fb3);
+
+		// Generate Color Texture
+		glGenTextures(1, &FBOcol3);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, FBOcol3);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_BYTE, NULL);
+
+		// Generate Position Texture
+		glGenTextures(1, &FBOpos3);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, FBOpos3);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		// Generate Normal Texture
+		glGenTextures(1, &FBOnorm3);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, FBOnorm3);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+
+		// Generate Mask Texture
+		glGenTextures(1, &FBOmask3);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, FBOmask3);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+
+		//Attach 2D texture to this FBO
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, FBOcol3, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, FBOpos3, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, FBOnorm3, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, FBOmask3, 0);
+
+
+		Tex1Loc = glGetUniformLocation(prog_raytrace->pid, "col_tex");
+		Tex2Loc = glGetUniformLocation(prog_raytrace->pid, "pos_tex");
+		Tex3Loc = glGetUniformLocation(prog_raytrace->pid, "norm_tex");
+		Tex4Loc = glGetUniformLocation(prog_raytrace->pid, "mask_tex");
+		glUniform1i(Tex1Loc, 0);
+		glUniform1i(Tex2Loc, 1);
+		glUniform1i(Tex3Loc, 2);
+		glUniform1i(Tex4Loc, 3);
+		
+		glUseProgram(prog_raytrace->pid);
+		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
+		glGenFramebuffers(1, &fb4);
+		glBindFramebuffer(GL_FRAMEBUFFER, fb4);
+
+		// Generate Color Texture
+		glGenTextures(1, &FBOcol4);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, FBOcol4);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_BYTE, NULL);
+
+		// Generate Position Texture
+		glGenTextures(1, &FBOpos4);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, FBOpos4);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		// Generate Normal Texture
+		glGenTextures(1, &FBOnorm4);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, FBOnorm4);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+
+		// Generate Mask Texture
+		glGenTextures(1, &FBOmask4);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, FBOmask4);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+
+		//Attach 2D texture to this FBO
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, FBOcol4, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, FBOpos4, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, FBOnorm4, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, FBOmask4, 0);
+
+
+		Tex1Loc = glGetUniformLocation(prog_raytrace->pid, "col_tex");
+		Tex2Loc = glGetUniformLocation(prog_raytrace->pid, "pos_tex");
+		Tex3Loc = glGetUniformLocation(prog_raytrace->pid, "norm_tex");
+		Tex4Loc = glGetUniformLocation(prog_raytrace->pid, "mask_tex");
+		glUniform1i(Tex1Loc, 0);
+		glUniform1i(Tex2Loc, 1);
+		glUniform1i(Tex3Loc, 2);
+		glUniform1i(Tex4Loc, 3);
+
+		GLenum status;
 		status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 		switch (status)
 		{
@@ -915,7 +961,7 @@ public:
 			glDrawBuffers(4, buffers);
 		}
 
-		glClearColor(0.0, 0.0, 0.0, 0.0);
+		glClearColor(0.0,0.0,0.0, 0.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// Get current frame buffer size.
@@ -931,38 +977,25 @@ public:
 		GLuint ssbo_binding_point_index = 0;
 		glShaderStorageBlockBinding(prog_deferred->pid, block_index, ssbo_binding_point_index);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_GPU_id);
-		glUniform1i(prog_deferred->getUniform("pass"), pass_number);
+		glUniform1i(prog_deferred->getUniform("passRender"), pass_number);
 		glUniform3fv(prog_deferred->getUniform("light_pos"), 1, &mouse_pos.x);
 		glUniform3fv(prog_deferred->getUniform("campos"), 1, &mycam.pos.x);
 		glUniform1i(prog_deferred->getUniform("screen_width"), width);
 		glUniform1i(prog_deferred->getUniform("screen_height"), height);
-		if (pass_number < 3) {
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, FBOcol);
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, FBOpos);
-			glActiveTexture(GL_TEXTURE2);
-			glBindTexture(GL_TEXTURE_2D, FBOnorm);
-			glActiveTexture(GL_TEXTURE3);
-			glBindTexture(GL_TEXTURE_2D, FBOmask);
-			glBindVertexArray(VertexArrayIDBox);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
-		}
-		else {
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, FBOcol3);
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, FBOpos3);
-			glActiveTexture(GL_TEXTURE2);
-			glBindTexture(GL_TEXTURE_2D, FBOnorm3);
-			glActiveTexture(GL_TEXTURE3);
-			glBindTexture(GL_TEXTURE_2D, FBOmask3);
-			glBindVertexArray(VertexArrayIDBox);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
-		}
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, FBOcol);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, FBOpos);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, FBOnorm);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, FBOmask);
+		glBindVertexArray(VertexArrayIDBox);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		
 		prog_deferred->unbind();
 
-		if (pass_number > 1) {
+		if (pass_number ==2) {
 			double frametime = get_last_elapsed_time();
 			glm::mat4 M, S, T, R;
 
@@ -983,18 +1016,16 @@ public:
 			mouse->draw(prog_mouse);
 			prog_mouse->unbind();
 
-			if (pass_number == 2) {
-				// Save output to framebuffer
-				glBindFramebuffer(GL_FRAMEBUFFER, 0);
-				glBindTexture(GL_TEXTURE_2D, FBOcol2);
-				glGenerateMipmap(GL_TEXTURE_2D);
-				glBindTexture(GL_TEXTURE_2D, FBOpos2);
-				glGenerateMipmap(GL_TEXTURE_2D);
-				glBindTexture(GL_TEXTURE_2D, FBOnorm2);
-				glGenerateMipmap(GL_TEXTURE_2D);
-				glBindTexture(GL_TEXTURE_2D, FBOmask2);
-				glGenerateMipmap(GL_TEXTURE_2D);
-			}
+			// Save output to framebuffer
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glBindTexture(GL_TEXTURE_2D, FBOcol2);
+			glGenerateMipmap(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, FBOpos2);
+			glGenerateMipmap(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, FBOnorm2);
+			glGenerateMipmap(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, FBOmask2);
+			glGenerateMipmap(GL_TEXTURE_2D);
 		}
 	}
 
@@ -1028,8 +1059,8 @@ public:
 		}
 	}
 
-	void render_to_screen()
-	{
+	void render_raytrace_geometry()
+		{
 		glBindFramebuffer(GL_FRAMEBUFFER, fb3);
 		GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
 		glDrawBuffers(4, buffers);
@@ -1043,14 +1074,14 @@ public:
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		prog_raytrace->bind();
-		glUniform1i(prog_raytrace->getUniform("pass"), pass_number);
+		glUniform1i(prog_raytrace->getUniform("passRender"), 2);
 		glUniform3fv(prog_raytrace->getUniform("mouse_pos"), 1, &mouse_pos.x);
 		glUniform2fv(prog_raytrace->getUniform("cloud_center"), 1, &cloud_center.x);
 		glUniform1f(prog_raytrace->getUniform("cloud_radius"), cloud_radius);
 		glUniform1i(prog_raytrace->getUniform("screen_width"), width);
 		glUniform1i(prog_raytrace->getUniform("screen_height"), height);
 
-
+		FBOmask2 = FBOmask;
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, FBOcol2);
 		glActiveTexture(GL_TEXTURE1);
@@ -1072,6 +1103,87 @@ public:
 		glGenerateMipmap(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, FBOmask3);
 		glGenerateMipmap(GL_TEXTURE_2D);
+
+		}
+	void render_raytrace_clouds()
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, fb4);
+		GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
+		glDrawBuffers(4, buffers);
+		// Get current frame buffer size.
+		int width, height;
+		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
+		float aspect = width / (float)height;
+		glViewport(0, 0, width, height);
+		// Clear framebuffer.
+		glClearColor(0.0, 0.0, 0.0, 0.0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		prog_raytrace->bind();
+		glUniform1i(prog_raytrace->getUniform("passRender"), 3);
+		glUniform3fv(prog_raytrace->getUniform("mouse_pos"), 1, &mouse_pos.x);
+		glUniform2fv(prog_raytrace->getUniform("cloud_center"), 1, &cloud_center.x);
+		glUniform1f(prog_raytrace->getUniform("cloud_radius"), cloud_radius);
+		glUniform1i(prog_raytrace->getUniform("screen_width"), width);
+		glUniform1i(prog_raytrace->getUniform("screen_height"), height);
+
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, FBOcol3);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, FBOpos3);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, FBOnorm3);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, FBOmask2);
+		glBindVertexArray(VertexArrayIDBox);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		prog_raytrace->unbind();
+		// Save output to framebuffer
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glBindTexture(GL_TEXTURE_2D, FBOcol4);
+		glGenerateMipmap(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, FBOpos4);
+		glGenerateMipmap(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, FBOnorm4);
+		glGenerateMipmap(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, FBOmask4);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+	}
+	void render_to_screen()
+	{
+		// Get current frame buffer size.
+		int width, height;
+		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
+		float aspect = width / (float)height;
+		glViewport(0, 0, width, height);
+		// Clear framebuffer.
+		glClearColor(0.0, 0.0, 0.0, 0.0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		prog_raytrace->bind();
+		glUniform1i(prog_raytrace->getUniform("passRender"), 4);
+		glUniform3fv(prog_raytrace->getUniform("mouse_pos"), 1, &mouse_pos.x);
+		glUniform2fv(prog_raytrace->getUniform("cloud_center"), 1, &cloud_center.x);
+		glUniform1f(prog_raytrace->getUniform("cloud_radius"), cloud_radius);
+		glUniform1i(prog_raytrace->getUniform("screen_width"), width);
+		glUniform1i(prog_raytrace->getUniform("screen_height"), height);
+
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, FBOcol4);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, FBOpos4);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, FBOnorm4);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, FBOmask2);
+		glBindVertexArray(VertexArrayIDBox);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		prog_raytrace->unbind();
+		// Save output to framebuffer
+		
 
 	}
 };
@@ -1114,12 +1226,13 @@ int main(int argc, char **argv)
 		application->create_SSBO();
 		application->render_to_texture();
 		application->pass_number = 1;
-		application->render_deferred();
+		application->render_deferred();//fill shadow list
 		application->pass_number = 2;
-		application->render_deferred();
-		application->render_to_screen();
-		application->pass_number = 3;
-		application->render_deferred();
+		application->render_deferred();//apply shadow list
+		application->render_raytrace_geometry();//ray trace everything
+		application->render_raytrace_clouds();//clouds inside only!
+		application->render_to_screen();//ray trace everything but clouds
+
 		// Swap front and back buffers.
 		glfwSwapBuffers(windowManager->getHandle());
 		// Poll for and process events.

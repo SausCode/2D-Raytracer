@@ -13,7 +13,7 @@ layout(location = 1) uniform sampler2D pos_tex;
 layout(location = 2) uniform sampler2D norm_tex;
 layout(location = 3) uniform sampler2D mask_tex;
 
-uniform int pass;
+uniform int passRender;
 uniform vec3 mouse_pos;
 uniform vec2 cloud_center;
 uniform float cloud_radius;
@@ -22,7 +22,6 @@ uniform int screen_height;
 
 struct traceInfo {
 	vec3 color;
-	vec2 pos;
 };
 
 vec2 voxel_transform(vec2 pos)
@@ -50,7 +49,7 @@ vec4 sampling(vec2 conedirection, vec2 texposition, float mipmap, vec2 pixpositi
 	return col;
 }
 
-traceInfo cone_tracing(vec2 conedirection, vec2 pixelpos, float angle,int stepcount, float is_in_cloud)
+traceInfo cone_tracing(vec2 conedirection, vec2 pixelpos, float angle,int stepcount, float is_in_cloud, int passNum)
 {
 	traceInfo t;
 	conedirection = normalize(conedirection);
@@ -68,45 +67,78 @@ traceInfo cone_tracing(vec2 conedirection, vec2 pixelpos, float angle,int stepco
 		texpos = voxel_transform(pixelposition);
 		trace += sampling(conedirection, texpos, mip, pixelposition, is_in_cloud);
 		distanceFromConeOrigin += voxelSize*3;
-		if((trace.a>0.25) && is_in_cloud==0){
-			break;
-		}
+		
+		if(	(trace.a>0.25 && is_in_cloud==0) || 
+			(trace.a>0.5 && is_in_cloud > 0) &&
+			(passNum!=3))	{ break; }
 	}
 	t.color = trace.rgb;
-	t.pos = texpos;
 	return t;
 }
+mat4 rotationMatrix(vec3 axis, float angle)
+{
+	axis = normalize(axis);
+	float s = sin(angle);
+	float c = cos(angle);
+	float oc = 1.0 - c;
 
+	return mat4(oc * axis.x * axis.x + c, oc * axis.x * axis.y - axis.z * s, oc * axis.z * axis.x + axis.y * s, 0.0,
+				oc * axis.x * axis.y + axis.z * s, oc * axis.y * axis.y + c, oc * axis.y * axis.z - axis.x * s, 0.0,
+				oc * axis.z * axis.x - axis.y * s, oc * axis.y * axis.z + axis.x * s, oc * axis.z * axis.z + c, 0.0,
+				0.0, 0.0, 0.0, 1.0);
+}
 void main()
 {
-	color.a = 1;
-	float coneHalfAngle = 0.25;
+	float coneHalfAngle = 1.05; // 60 degree cone!
 	vec3 texturecolor = texture(col_tex, fragTex).rgb;
 	vec3 normals = texture(norm_tex, fragTex).rgb;
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
 	vec4 is_in_cloud = texture(mask_tex, fragTex);
-	vec3 voxelcolor;
-	color.rgb = texturecolor;
-	
+
+	color = vec4(texturecolor,1);	
+
 	vec2 lightdirection = normalize(mouse_pos.xy - world_pos.xy);
 
 	if (world_pos != vec3(0))
 	{
 	
-		traceInfo t;
-		if(is_in_cloud.a==0)
-			t = cone_tracing(normals.xy, world_pos.xy, coneHalfAngle, 15,is_in_cloud.a);
-		else
+		if (passRender == 2)
 		{
-			t = cone_tracing(lightdirection, world_pos.xy, coneHalfAngle*5, 20, is_in_cloud.a);
-			t.color *= is_in_cloud.xyz;
+			traceInfo t;
+			if (is_in_cloud.a == 0)
+				t = cone_tracing(normals.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
+			else
+			{
+				t = cone_tracing(lightdirection, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
+				t.color *= is_in_cloud.xyz;
+			}
+			color.rgb += t.color;
 		}
-		color.rgb += t.color;
-		
-		//color.rgb=vec3(1,0,0);
+		else if (passRender == 3 && is_in_cloud.a > 0)
+		{
+
+			mat4 Rz = rotationMatrix(vec3(0, 0, 1), 3.1415926 / 2.);
+			traceInfo t1,t2,t3,t4;
+			vec4 conedirection = vec4(lightdirection,0,1);
+			t1 = cone_tracing(lightdirection, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
+			conedirection = Rz * conedirection;
+			t2 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
+			conedirection = Rz * conedirection;
+			t3 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
+			conedirection = Rz * conedirection;
+			t4 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
+			vec3 colorsum = t1.color.rgb + t2.color.rgb + t3.color.rgb + t4.color.rgb;
+			colorsum *= is_in_cloud.xyz;
+			color.rgb += colorsum;
+		}
+		else if(passRender==4 && is_in_cloud.a==0)
+		{
+			traceInfo t;
+			t = cone_tracing(normals.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
+			color.rgb += t.color;
+		}
 	}
 	
-	//color.rgb = texturecolor;
 	
 
 	norm_out = vec4(normals, 1);
