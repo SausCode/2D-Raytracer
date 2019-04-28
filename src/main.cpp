@@ -1,6 +1,8 @@
 #include <iostream>
 #include <glad/glad.h>
 
+#define GLM_ENABLE_EXPERIMENTAL
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include <cstdlib>
@@ -16,6 +18,7 @@
 // value_ptr for glm
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include "glm/gtx/string_cast.hpp"
 using namespace std;
 using namespace glm;
 
@@ -54,16 +57,16 @@ public:
 	WindowManager * windowManager = nullptr;
 
 	// Our shader program
-	std::shared_ptr<Program> prog_wall, prog_mouse, prog_deferred, prog_raytrace, prog_fire, prog_cloud;
+	std::shared_ptr<Program> prog_wall, prog_mouse, prog_deferred, prog_raytrace, prog_fire, prog_cloud, prog_water;
 
 	// Shape to be used (from obj file)
-	shared_ptr<Shape> wall, mouse, cloud;
+	shared_ptr<Shape> wall, mouse, cloud, water;
 
 	//camera
 	camera mycam;
 
 	//texture for sim
-	GLuint wall_texture, wall_normal_texture, fire_texture, cloud_texture, cloud_normal_texture;
+	GLuint wall_texture, wall_normal_texture, fire_texture, cloud_texture, cloud_normal_texture, water_texture, water_displacement_texture;
 
 	// textures for position, color, and normal
 	GLuint fb, fb2, fb3, fb4, depth_rb, FBOpos, FBOcol, FBOnorm, FBOmask, FBOpos2, FBOcol2, FBOnorm2, FBOmask2, FBOpos3, FBOcol3, FBOnorm3, FBOmask3, FBOpos4, FBOcol4, FBOnorm4, FBOmask4;
@@ -95,6 +98,9 @@ public:
 	float pi_half = pi / 2.;
 	vec2 cloud_center = { 4.75f, 0.0f };
 	float cloud_radius = 2.0;
+	glm::vec3 water_pos = glm::vec3(-0.200000, -0.900000, -0.400000);
+	float rotate_z = 0;
+	glm::vec2 resolution = glm::vec2(1920, 1080);
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
@@ -120,6 +126,40 @@ public:
 		if (key == GLFW_KEY_K && action == GLFW_PRESS)
 		{
 			get_SSBO_back();
+		}
+		if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
+		{
+			water_pos.y -= .1;
+			std::cout << glm::to_string(water_pos) << std::endl;
+		}
+		if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
+		{
+			water_pos.y += .1;
+			std::cout << glm::to_string(water_pos) << std::endl;
+		}
+		if (key == GLFW_KEY_UP && action == GLFW_PRESS)
+		{
+			//water_pos.y += .1;
+			//std::cout << glm::to_string(water_pos) << std::endl;
+			rotate_z += 1;
+			std::cout << rotate_z << std::endl;
+		}
+		if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
+		{
+			//water_pos.y -= .1;
+			//std::cout << glm::to_string(water_pos) << std::endl;
+			rotate_z -= 1;
+			std::cout << rotate_z << std::endl;
+		}
+		if (key == GLFW_KEY_W && action == GLFW_PRESS)
+		{
+			water_pos.z += .1;
+			std::cout << glm::to_string(water_pos) << std::endl;
+		}
+		if (key == GLFW_KEY_S && action == GLFW_PRESS)
+		{
+			water_pos.z -= .1;
+			std::cout << glm::to_string(water_pos) << std::endl;
 		}
 	}
 
@@ -171,6 +211,27 @@ public:
 		prog_wall->addAttribute("vertPos");
 		prog_wall->addAttribute("vertNor");
 		prog_wall->addAttribute("vertTex");
+
+		// Initialize the GLSL program.
+		prog_water = make_shared<Program>();
+		//prog_water->setVerbose(true);
+		prog_water->setVerbose(false);
+		prog_water->setShaderNames(resourceDirectory + "/water_vert.glsl", resourceDirectory + "/water_frag.glsl");
+
+		if (!prog_water->init())
+		{
+			std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
+			exit(1);
+		}
+
+		prog_water->init();
+		prog_water->addUniform("M");
+		prog_water->addUniform("t");
+		prog_water->addUniform("light_pos");
+		prog_water->addUniform("resolution");
+		prog_water->addAttribute("vertPos");
+		prog_water->addAttribute("vertNor");
+		prog_water->addAttribute("vertTex");
 
 		// Initialize the GLSL program.
 		prog_mouse = make_shared<Program>();
@@ -391,6 +452,13 @@ public:
 		wall->init();
 
 		// Initialize mesh.
+		water = make_shared<Shape>();
+		//water->loadMesh(resourceDirectory + "/cube_subdivided.obj");
+		water->loadMesh(resourceDirectory + "/grid_high.obj");
+		water->resize();
+		water->init();
+
+		// Initialize mesh.
 		mouse = make_shared<Shape>();
 		mouse->loadMesh(resourceDirectory + "/internet_square.obj");
 		mouse->resize();
@@ -399,9 +467,46 @@ public:
 		int width, height, channels;
 		char filepath[1000];
 
-		std::string str = resourceDirectory + "/clouds_sprite.png";
+		std::string str = resourceDirectory + "/water_hd.jpg";
+		//str = resourceDirectory + "/water_ripple.jpg";
+		//str = resourceDirectory + "/water.png";
+		unsigned char* data = stbi_load(str.c_str(), &width, &height, &channels, 4);
+		glGenTextures(1, &water_texture);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, water_texture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		str = resourceDirectory + "/waterdisplacement.png";
 		strcpy(filepath, str.c_str());
-		unsigned char* data = stbi_load(filepath, &width, &height, &channels, 4);
+		data = stbi_load(filepath, &width, &height, &channels, 4);
+		glGenTextures(1, &water_displacement_texture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, water_displacement_texture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		//[TWOTEXTURES]
+		//set the 2 textures to the correct samplers in the fragment shader:
+		GLuint waterTex1Location = glGetUniformLocation(prog_water->pid, "tex");
+		GLuint waterTex2Location = glGetUniformLocation(prog_water->pid, "tex2");
+
+		// Then bind the uniform samplers to texture units:
+		glUseProgram(prog_water->pid);
+		glUniform1i(waterTex1Location, 0);
+		glUniform1i(waterTex2Location, 1);
+
+		str = resourceDirectory + "/clouds_sprite.png";
+		strcpy(filepath, str.c_str());
+		data = stbi_load(filepath, &width, &height, &channels, 4);
 		glGenTextures(1, &cloud_texture);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, cloud_texture);
@@ -780,6 +885,21 @@ public:
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 	}
 
+	void clear_SSBO() {
+		//Fill angle list with big numbers
+		for (int i = 0; i < ssbo_size; i++) {
+			ssbo_CPUMEM.angle_list[i] = ivec4(i, INT_MAX, INT_MAX, INT_MAX);
+		}
+
+		glUseProgram(prog_deferred->pid);
+		glDeleteBuffers(1, &ssbo_GPU_id);
+		glGenBuffers(1, &ssbo_GPU_id);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_GPU_id);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ssbo_data), &ssbo_CPUMEM, GL_DYNAMIC_DRAW);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_GPU_id);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
+	}
+
 
 	float map(float x, float in_min, float in_max, float out_min, float out_max)
 	{
@@ -887,16 +1007,16 @@ public:
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		wall->draw(prog_wall);
 
-		// Bottom Walls
-		T = glm::translate(glm::mat4(1), glm::vec3(0.5, -.9, 0));
-		S = glm::scale(glm::mat4(1), glm::vec3(0.5, 0.1, 1));
-		M = T * R * S;
-		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		wall->draw(prog_wall);
-		T = glm::translate(glm::mat4(1), glm::vec3(-0.5, -.9, 0));
-		M = T * R * S;
-		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		wall->draw(prog_wall);
+		//// Bottom Walls
+		//T = glm::translate(glm::mat4(1), glm::vec3(0.5, -.9, 0));
+		//S = glm::scale(glm::mat4(1), glm::vec3(0.5, 0.1, 1));
+		//M = T * R * S;
+		//glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		//wall->draw(prog_wall);
+		//T = glm::translate(glm::mat4(1), glm::vec3(-0.5, -.9, 0));
+		//M = T * R * S;
+		//glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		//wall->draw(prog_wall);
 
 		// Right Walls
 		T = glm::translate(glm::mat4(1), glm::vec3(0.9, 0.5, 0));
@@ -912,6 +1032,27 @@ public:
 
 		//done, unbind stuff
 		prog_wall->unbind();
+
+
+		prog_water->bind();
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, water_texture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, water_displacement_texture);
+		T = glm::translate(glm::mat4(1), water_pos);
+		S = glm::scale(glm::mat4(1), glm::vec3(1, 1, 2));
+		R = glm::rotate(glm::mat4(1), glm::radians(rotate_z), glm::vec3(1, 0, 0));
+		M = T * S * R;
+		//glUniform1f(prog_water->getUniform("t"), timeDelta);
+		glUniform1f(prog_water->getUniform("t"), glfwGetTime());
+		glUniform3fv(prog_water->getUniform("light_pos"), 1, &mouse_pos.x);
+		glUniform2f(prog_water->getUniform("resolution"), resolution.x, resolution.y);
+		glUniformMatrix4fv(prog_water->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		water->draw(prog_water);
+		//done, unbind stuff
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		prog_water->unbind();
 
 		/*
 			DRAW CLOUD
@@ -1217,13 +1358,12 @@ int main(int argc, char **argv)
 
 	application->init(resourceDir);
 	application->initGeom(resourceDir);
-
+	application->create_SSBO();
 
 	// Loop until the user closes the window.
 	while (!glfwWindowShouldClose(windowManager->getHandle()))
 	{
 		application->update_mouse();
-		application->create_SSBO();
 		application->render_to_texture();
 		application->pass_number = 1;
 		application->render_deferred();//fill shadow list

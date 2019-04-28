@@ -67,5 +67,11 @@
     <None Include="..\resources\cloud_vert.glsl">
       <Filter>shader</Filter>
     </None>
+    <None Include="..\resources\water_frag.glsl">
+      <Filter>shader</Filter>
+    </None>
+    <None Include="..\resources\water_vert.glsl">
+      <Filter>shader</Filter>
+    </None>
   </ItemGroup>
 </Project>

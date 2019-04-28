@@ -89,13 +89,15 @@ mat4 rotationMatrix(vec3 axis, float angle)
 }
 void main()
 {
+	color.a = 1;
 	float coneHalfAngle = 1.05; // 60 degree cone!
 	vec3 texturecolor = texture(col_tex, fragTex).rgb;
 	vec3 normals = texture(norm_tex, fragTex).rgb;
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
 	vec4 is_in_cloud = texture(mask_tex, fragTex);
 
-	color = vec4(texturecolor,1);	
+	color = vec4(texturecolor, 1);
+	color.a = 1;
 
 	vec2 lightdirection = normalize(mouse_pos.xy - world_pos.xy);
 
