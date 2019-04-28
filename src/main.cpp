@@ -99,7 +99,7 @@ public:
 	vec2 cloud_center = { 4.75f, 0.0f };
 	float cloud_radius = 2.0;
 	glm::vec3 water_pos = glm::vec3(-0.200000, -0.900000, -0.400000);
-	float rotate_z = 0;
+	float rotate_z = 20.f;
 	glm::vec2 resolution = glm::vec2(1920, 1080);
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
@@ -1363,6 +1363,7 @@ int main(int argc, char **argv)
 	// Loop until the user closes the window.
 	while (!glfwWindowShouldClose(windowManager->getHandle()))
 	{
+		application->clear_SSBO();
 		application->update_mouse();
 		application->render_to_texture();
 		application->pass_number = 1;

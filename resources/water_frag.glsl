@@ -69,6 +69,7 @@
 layout(location = 0) out vec4 color;
 layout(location = 1) out vec4 pos_out;
 layout(location = 2) out vec4 norm_out;
+layout(location = 3) out vec4 mask_out;
 
 in vec3 fragPos;
 in vec2 fragTex;
@@ -92,6 +93,8 @@ void main()
 	float y = fragTex.y + displacement.y * 0.1 - 0.5 + (sin(fragTex.x * 120.0 + t) * 0.1);
 
 	norm_out = vec4(fragNor,1);
+
+	norm_out = vec4(.5,.5,.5,1);
 //	pos_out = worldPos;
 
 	color = texture(tex, vec2 (fragTex.x, y));
@@ -109,9 +112,12 @@ void main()
 	vec3 col = texture2D(tex,uv).xyz;
 
 	pos_out = worldPos;
+	pos_out.z = 0;
 
 	color.rgb = col;
-	color.a = .5;
+	color.a = 1;
+
+	mask_out = vec4(color.xyz,1);
 
 //	color.rgb = vec3(fragNor);
 

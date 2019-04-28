@@ -51,19 +51,17 @@ void main()
 	gl_Position = M * vec4(vertPos, 1.0);
 	worldPos = M * vec4(vertPos, 1.0);
 
-	
-	float freq = 3.0;
-	float amp = 0.1;
-	float angle = (t + gl_Position.x) * freq;
+//	float freq = 3.0;
+//	float amp = 0.1;
+//	float angle = (t + gl_Position.x) * freq;
+//	gl_Position.y += (sin(angle)) * amp;
+//	worldPos = gl_Position;
+//	vec3 newNormals = vec3(-amp * freq * cos(angle), 0.0, 1.0);
+//	newNormals = vec3(-amp, freq, cos(angle));
+//	newNormals = normalize(newNormals);
+//	fragNor = (M * vec4(newNormals, 0.0)).xyz;
 
-	gl_Position.y += (sin(angle)) * amp;
-
-	worldPos = gl_Position;
-
-	vec3 newNormals = vec3(-amp * freq * cos(angle), 0.0, 1.0);
-	newNormals = vec3(-amp, freq, cos(angle));
-	newNormals = normalize(newNormals);
-	fragNor = (M * vec4(newNormals, 0.0)).xyz;
+	fragNor = (M * vec4(vertNor, 0.0)).xyz;
 	fragTex = vertTex;
 
 
