@@ -60,7 +60,7 @@ public:
 	std::shared_ptr<Program> prog_wall, prog_mouse, prog_deferred, prog_raytrace, prog_fire, prog_cloud, prog_water;
 
 	// Shape to be used (from obj file)
-	shared_ptr<Shape> wall, mouse, cloud, water;
+	shared_ptr<Shape> wall, mouse, cloud, water, fire;
 
 	//camera
 	camera mycam;
@@ -101,6 +101,7 @@ public:
 	glm::vec3 water_pos = glm::vec3(-0.200000, -0.900000, -0.400000);
 	float rotate_z = 20.f;
 	glm::vec2 resolution = glm::vec2(1920, 1080);
+	bool fire_status = false;
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
@@ -127,24 +128,28 @@ public:
 		{
 			get_SSBO_back();
 		}
-		if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
+		if (key == GLFW_KEY_F && action == GLFW_PRESS)
+		{
+			fire_status = !fire_status;
+		}
+		if (key == GLFW_KEY_LEFT && action == GLFW_PRESS || key == GLFW_KEY_LEFT && action == GLFW_REPEAT)
 		{
 			water_pos.y -= .1;
 			std::cout << glm::to_string(water_pos) << std::endl;
 		}
-		if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
+		if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS || key == GLFW_KEY_RIGHT && action == GLFW_REPEAT)
 		{
 			water_pos.y += .1;
 			std::cout << glm::to_string(water_pos) << std::endl;
 		}
-		if (key == GLFW_KEY_UP && action == GLFW_PRESS)
+		if (key == GLFW_KEY_UP && action == GLFW_PRESS || key == GLFW_KEY_UP && action == GLFW_REPEAT)
 		{
 			//water_pos.y += .1;
 			//std::cout << glm::to_string(water_pos) << std::endl;
 			rotate_z += 1;
 			std::cout << rotate_z << std::endl;
 		}
-		if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
+		if (key == GLFW_KEY_DOWN && action == GLFW_PRESS || key == GLFW_KEY_DOWN && action == GLFW_REPEAT)
 		{
 			//water_pos.y -= .1;
 			//std::cout << glm::to_string(water_pos) << std::endl;
@@ -453,16 +458,21 @@ public:
 
 		// Initialize mesh.
 		water = make_shared<Shape>();
-		//water->loadMesh(resourceDirectory + "/cube_subdivided.obj");
 		water->loadMesh(resourceDirectory + "/grid_high.obj");
 		water->resize();
 		water->init();
 
 		// Initialize mesh.
 		mouse = make_shared<Shape>();
-		mouse->loadMesh(resourceDirectory + "/internet_square.obj");
+		mouse->loadMesh(resourceDirectory + "/sphere.obj");
 		mouse->resize();
 		mouse->init();
+
+		// Initialize mesh.
+		fire = make_shared<Shape>();
+		fire->loadMesh(resourceDirectory + "/internet_square.obj");
+		fire->resize();
+		fire->init();
 
 		int width, height, channels;
 		char filepath[1000];
@@ -1141,21 +1151,38 @@ public:
 			glm::mat4 M, S, T, R;
 
 
-			// Draw cursor
-			prog_mouse->bind();
-			T = glm::translate(glm::mat4(1), mouse_pos);
-			S = glm::scale(glm::mat4(1), glm::vec3(0.025 * 2, 0.05 * 2, 0.05));
-			R = glm::rotate(glm::mat4(1), glm::radians(180.f), glm::vec3(0, 0, 1));
-			M = T * S * R;
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, fire_texture);
-			//update_fire_tex(frametime);
-			//glUniform1f(prog_fire->getUniform("t"), t);
-			//glUniform2fv(prog_fire->getUniform("to"), 1, &fire_to.x);
-			//glUniform2fv(prog_fire->getUniform("to2"), 1, &fire_to2.x);
-			glUniformMatrix4fv(prog_fire->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-			mouse->draw(prog_mouse);
-			prog_mouse->unbind();
+
+			if (fire_status)
+			{
+				// Draw cursor
+				prog_fire->bind();
+				T = glm::translate(glm::mat4(1), mouse_pos);
+				S = glm::scale(glm::mat4(1), glm::vec3(0.025 * 2, 0.05 * 2, 0));
+				R = glm::rotate(glm::mat4(1), glm::radians(180.f), glm::vec3(0, 0, 1));
+				M = T * S * R;
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(GL_TEXTURE_2D, fire_texture);
+				update_fire_tex(frametime);
+				glUniform1f(prog_fire->getUniform("t"), t);
+				glUniform2fv(prog_fire->getUniform("to"), 1, &fire_to.x);
+				glUniform2fv(prog_fire->getUniform("to2"), 1, &fire_to2.x);
+				glUniformMatrix4fv(prog_fire->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+				fire->draw(prog_fire);
+				prog_fire->unbind();
+			}
+			else
+			{
+				// Draw cursor
+				prog_mouse->bind();
+				T = glm::translate(glm::mat4(1), mouse_pos);
+				S = glm::scale(glm::mat4(1), glm::vec3(0.05, 0.05 * 2, 0));
+				M = T * S;
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(GL_TEXTURE_2D, fire_texture);
+				glUniformMatrix4fv(prog_fire->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+				mouse->draw(prog_mouse);
+				prog_mouse->unbind();
+			}
 
 			// Save output to framebuffer
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);

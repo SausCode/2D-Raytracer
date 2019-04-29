@@ -96,6 +96,12 @@ void main()
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
 	vec4 is_in_cloud = texture(mask_tex, fragTex);
 
+	if (is_in_cloud.a > 0)
+	{
+		coneHalfAngle = .5;
+		normals = vec3(0,1,0);
+	}
+
 	color = vec4(texturecolor, 1);
 
 	vec2 lightdirection = normalize(mouse_pos.xy - world_pos.xy);
