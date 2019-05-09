@@ -10,14 +10,14 @@ layout(std430, binding = 0) volatile buffer shader_data
 layout(location = 0) out vec4 color;
 layout(location = 1) out vec4 pos_out;
 layout(location = 2) out vec4 norm_out;
-layout(location = 3) out vec4 mask_out;
+layout(location = 3) out vec4 cloud_mask_out;
 
 in vec2 fragTex;
 in vec3 fragNor;
 layout(location = 0) uniform sampler2D col_tex;
 layout(location = 1) uniform sampler2D pos_tex;
 layout(location = 2) uniform sampler2D norm_tex;
-layout(location = 3) uniform sampler2D mask_tex;
+layout(location = 3) uniform sampler2D cloud_mask_tex;
 
 // 1 for first, 2 for second
 uniform int passRender;
@@ -75,14 +75,14 @@ void main()
 	vec3 texturecolor = texture(col_tex, fragTex).rgb;
 	vec3 normals = texture(norm_tex, fragTex).rgb;
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
-	vec4 cloud_pos = texture(mask_tex, fragTex);
+	vec4 cloud_pos = texture(cloud_mask_tex, fragTex);
 
 	if (length(world_pos)<0.0001)
 	{
 		color = vec4(0);
 		norm_out = vec4(0);
 		pos_out = vec4(0);
-		mask_out = vec4(0);
+		cloud_mask_out = vec4(0);
 		return;
 	}
 
@@ -141,9 +141,7 @@ void main()
 		}
 		
 	}
-	
 	norm_out = vec4(normals, 1);
 	pos_out = vec4(world_pos, 1);
-	mask_out = cloud_pos;
-	
+	cloud_mask_out = cloud_pos;
 }

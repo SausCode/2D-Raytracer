@@ -66,7 +66,7 @@ public:
 	GLuint wall_texture, wall_normal_texture, fire_texture, cloud_texture, cloud_normal_texture;
 
 	// textures for position, color, and normal
-	GLuint fb, fb2, fb3, fb4, depth_rb, FBOpos, FBOcol, FBOnorm, FBOmask, FBOpos2, FBOcol2, FBOnorm2, FBOmask2, FBOpos3, FBOcol3, FBOnorm3, FBOmask3, FBOpos4, FBOcol4, FBOnorm4, FBOmask4;
+	GLuint fb, fb2, fb3, fb4, depth_rb, FBOpos, FBOcol, FBOnorm, FBOcloudmask, FBOpos2, FBOcol2, FBOnorm2, FBOcloudmask2, FBOpos3, FBOcol3, FBOnorm3, FBOcloudmask3, FBOpos4, FBOcol4, FBOnorm4, FBOcloudmask4;
 
 	// Contains vertex information for OpenGL
 	GLuint VertexArrayID, VertexArrayID2;
@@ -525,9 +525,9 @@ public:
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
 
 		// Generate Mask Texture
-		glGenTextures(1, &FBOmask);
+		glGenTextures(1, &FBOcloudmask);
 		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, FBOmask);
+		glBindTexture(GL_TEXTURE_2D, FBOcloudmask);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -538,7 +538,7 @@ public:
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, FBOcol, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, FBOpos, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, FBOnorm, 0);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, FBOmask, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, FBOcloudmask, 0);
 		//-------------------------
 		glGenRenderbuffers(1, &depth_rb);
 		glBindRenderbuffer(GL_RENDERBUFFER, depth_rb);
@@ -552,7 +552,7 @@ public:
 		int Tex1Loc = glGetUniformLocation(prog_deferred->pid, "col_tex");
 		int Tex2Loc = glGetUniformLocation(prog_deferred->pid, "pos_tex");
 		int Tex3Loc = glGetUniformLocation(prog_deferred->pid, "norm_tex");
-		int Tex4Loc = glGetUniformLocation(prog_deferred->pid, "mask_tex");
+		int Tex4Loc = glGetUniformLocation(prog_deferred->pid, "cloud_mask_tex");
 		glUniform1i(Tex1Loc, 0);
 		glUniform1i(Tex2Loc, 1);
 		glUniform1i(Tex3Loc, 2);
@@ -598,9 +598,9 @@ public:
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
 
 		// Generate Mask Texture
-		glGenTextures(1, &FBOmask2);
+		glGenTextures(1, &FBOcloudmask2);
 		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, FBOmask2);
+		glBindTexture(GL_TEXTURE_2D, FBOcloudmask2);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -611,13 +611,13 @@ public:
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, FBOcol2, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, FBOpos2, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, FBOnorm2, 0);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, FBOmask2, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, FBOcloudmask2, 0);
 
 
 		Tex1Loc = glGetUniformLocation(prog_raytrace->pid, "col_tex");
 		Tex2Loc = glGetUniformLocation(prog_raytrace->pid, "pos_tex");
 		Tex3Loc = glGetUniformLocation(prog_raytrace->pid, "norm_tex");
-		Tex4Loc = glGetUniformLocation(prog_raytrace->pid, "mask_tex");
+		Tex4Loc = glGetUniformLocation(prog_raytrace->pid, "cloud_mask_tex");
 		glUniform1i(Tex1Loc, 0);
 		glUniform1i(Tex2Loc, 1);
 		glUniform1i(Tex3Loc, 2);
@@ -661,9 +661,9 @@ public:
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
 
 		// Generate Mask Texture
-		glGenTextures(1, &FBOmask3);
+		glGenTextures(1, &FBOcloudmask3);
 		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, FBOmask3);
+		glBindTexture(GL_TEXTURE_2D, FBOcloudmask3);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -674,13 +674,13 @@ public:
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, FBOcol3, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, FBOpos3, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, FBOnorm3, 0);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, FBOmask3, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, FBOcloudmask3, 0);
 
 
 		Tex1Loc = glGetUniformLocation(prog_raytrace->pid, "col_tex");
 		Tex2Loc = glGetUniformLocation(prog_raytrace->pid, "pos_tex");
 		Tex3Loc = glGetUniformLocation(prog_raytrace->pid, "norm_tex");
-		Tex4Loc = glGetUniformLocation(prog_raytrace->pid, "mask_tex");
+		Tex4Loc = glGetUniformLocation(prog_raytrace->pid, "cloud_mask_tex");
 		glUniform1i(Tex1Loc, 0);
 		glUniform1i(Tex2Loc, 1);
 		glUniform1i(Tex3Loc, 2);
@@ -723,9 +723,9 @@ public:
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
 
 		// Generate Mask Texture
-		glGenTextures(1, &FBOmask4);
+		glGenTextures(1, &FBOcloudmask4);
 		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, FBOmask4);
+		glBindTexture(GL_TEXTURE_2D, FBOcloudmask4);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -736,13 +736,13 @@ public:
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, FBOcol4, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, FBOpos4, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, FBOnorm4, 0);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, FBOmask4, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, FBOcloudmask4, 0);
 
 
 		Tex1Loc = glGetUniformLocation(prog_raytrace->pid, "col_tex");
 		Tex2Loc = glGetUniformLocation(prog_raytrace->pid, "pos_tex");
 		Tex3Loc = glGetUniformLocation(prog_raytrace->pid, "norm_tex");
-		Tex4Loc = glGetUniformLocation(prog_raytrace->pid, "mask_tex");
+		Tex4Loc = glGetUniformLocation(prog_raytrace->pid, "cloud_mask_tex");
 		glUniform1i(Tex1Loc, 0);
 		glUniform1i(Tex2Loc, 1);
 		glUniform1i(Tex3Loc, 2);
@@ -949,7 +949,7 @@ public:
 		glGenerateMipmap(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, FBOnorm);
 		glGenerateMipmap(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, FBOmask);
+		glBindTexture(GL_TEXTURE_2D, FBOcloudmask);
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 
@@ -989,7 +989,7 @@ public:
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, FBOnorm);
 		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, FBOmask);
+		glBindTexture(GL_TEXTURE_2D, FBOcloudmask);
 		glBindVertexArray(VertexArrayIDBox);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		
@@ -1024,7 +1024,7 @@ public:
 			glGenerateMipmap(GL_TEXTURE_2D);
 			glBindTexture(GL_TEXTURE_2D, FBOnorm2);
 			glGenerateMipmap(GL_TEXTURE_2D);
-			glBindTexture(GL_TEXTURE_2D, FBOmask2);
+			glBindTexture(GL_TEXTURE_2D, FBOcloudmask2);
 			glGenerateMipmap(GL_TEXTURE_2D);
 		}
 	}
@@ -1081,7 +1081,6 @@ public:
 		glUniform1i(prog_raytrace->getUniform("screen_width"), width);
 		glUniform1i(prog_raytrace->getUniform("screen_height"), height);
 
-		FBOmask2 = FBOmask;
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, FBOcol2);
 		glActiveTexture(GL_TEXTURE1);
@@ -1089,7 +1088,7 @@ public:
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, FBOnorm2);
 		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, FBOmask2);
+		glBindTexture(GL_TEXTURE_2D, FBOcloudmask);
 		glBindVertexArray(VertexArrayIDBox);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		prog_raytrace->unbind();
@@ -1101,7 +1100,7 @@ public:
 		glGenerateMipmap(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, FBOnorm3);
 		glGenerateMipmap(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, FBOmask3);
+		glBindTexture(GL_TEXTURE_2D, FBOcloudmask3);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
 		}
@@ -1135,7 +1134,7 @@ public:
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, FBOnorm3);
 		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, FBOmask2);
+		glBindTexture(GL_TEXTURE_2D, FBOcloudmask);
 		glBindVertexArray(VertexArrayIDBox);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		prog_raytrace->unbind();
@@ -1147,7 +1146,7 @@ public:
 		glGenerateMipmap(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, FBOnorm4);
 		glGenerateMipmap(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, FBOmask4);
+		glBindTexture(GL_TEXTURE_2D, FBOcloudmask4);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
 	}
@@ -1178,7 +1177,7 @@ public:
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, FBOnorm4);
 		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, FBOmask2);
+		glBindTexture(GL_TEXTURE_2D, FBOcloudmask);
 		glBindVertexArray(VertexArrayIDBox);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		prog_raytrace->unbind();

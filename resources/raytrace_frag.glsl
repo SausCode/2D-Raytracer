@@ -5,13 +5,12 @@ in vec2 fragTex;
 layout(location = 0) out vec4 color;
 layout(location = 1) out vec4 pos_out;
 layout(location = 2) out vec4 norm_out;
-layout(location = 3) out vec4 mask_out;
-
+layout(location = 3) out vec4 cloud_mask_out;
 
 layout(location = 0) uniform sampler2D col_tex;
 layout(location = 1) uniform sampler2D pos_tex;
 layout(location = 2) uniform sampler2D norm_tex;
-layout(location = 3) uniform sampler2D mask_tex;
+layout(location = 3) uniform sampler2D cloud_mask_tex;
 
 uniform int passRender;
 uniform vec3 mouse_pos;
@@ -93,7 +92,7 @@ void main()
 	vec3 texturecolor = texture(col_tex, fragTex).rgb;
 	vec3 normals = texture(norm_tex, fragTex).rgb;
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
-	vec4 is_in_cloud = texture(mask_tex, fragTex);
+	vec4 is_in_cloud = texture(cloud_mask_tex, fragTex);
 
 	color = vec4(texturecolor,1);	
 
@@ -120,7 +119,7 @@ void main()
 			mat4 Rz = rotationMatrix(vec3(0, 0, 1), 3.1415926 / 2.);
 			traceInfo t1,t2,t3,t4;
 			vec4 conedirection = vec4(lightdirection,0,1);
-			t1 = cone_tracing(lightdirection, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
+			t1 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
 			conedirection = Rz * conedirection;
 			t2 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
 			conedirection = Rz * conedirection;
@@ -134,8 +133,9 @@ void main()
 		else if(passRender==4 && is_in_cloud.a==0)
 		{
 			traceInfo t;
-			t = cone_tracing(normals.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
+			t = cone_tracing(normals.xy, world_pos.xy, coneHalfAngle, 20, is_in_cloud.a, passRender);
 			color.rgb += t.color;
+
 		}
 	}
 	
@@ -143,5 +143,5 @@ void main()
 
 	norm_out = vec4(normals, 1);
 	pos_out = vec4(world_pos, 1);
-	mask_out = is_in_cloud;
+	cloud_mask_out = is_in_cloud;
 }
