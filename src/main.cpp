@@ -996,25 +996,7 @@ public:
 		prog_deferred->unbind();
 
 		if (pass_number ==2) {
-			double frametime = get_last_elapsed_time();
-			glm::mat4 M, S, T, R;
-
-
-			// Draw cursor
-			prog_mouse->bind();
-			T = glm::translate(glm::mat4(1), mouse_pos);
-			S = glm::scale(glm::mat4(1), glm::vec3(0.025 * 2, 0.05 * 2, 0.05));
-			R = glm::rotate(glm::mat4(1), glm::radians(180.f), glm::vec3(0, 0, 1));
-			M = T * S * R;
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, fire_texture);
-			//update_fire_tex(frametime);
-			//glUniform1f(prog_fire->getUniform("t"), t);
-			//glUniform2fv(prog_fire->getUniform("to"), 1, &fire_to.x);
-			//glUniform2fv(prog_fire->getUniform("to2"), 1, &fire_to2.x);
-			glUniformMatrix4fv(prog_fire->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-			mouse->draw(prog_mouse);
-			prog_mouse->unbind();
+			
 
 			// Save output to framebuffer
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -1161,6 +1143,7 @@ public:
 		glClearColor(0.0, 0.0, 0.0, 0.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+
 		prog_raytrace->bind();
 		glUniform1i(prog_raytrace->getUniform("passRender"), 4);
 		glUniform3fv(prog_raytrace->getUniform("mouse_pos"), 1, &mouse_pos.x);
@@ -1183,6 +1166,23 @@ public:
 		prog_raytrace->unbind();
 		// Save output to framebuffer
 		
+		//double frametime = get_last_elapsed_time();
+		glm::mat4 M, S, T, R;
+		// Draw cursor
+		prog_mouse->bind();
+		T = glm::translate(glm::mat4(1), mouse_pos);
+		S = glm::scale(glm::mat4(1), glm::vec3(0.025 * 2, 0.05 * 2, 0.05));
+		R = glm::rotate(glm::mat4(1), glm::radians(180.f), glm::vec3(0, 0, 1));
+		M = T * S * R;
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, fire_texture);
+		//update_fire_tex(frametime);
+		//glUniform1f(prog_fire->getUniform("t"), t);
+		//glUniform2fv(prog_fire->getUniform("to"), 1, &fire_to.x);
+		//glUniform2fv(prog_fire->getUniform("to2"), 1, &fire_to2.x);
+		glUniformMatrix4fv(prog_fire->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		mouse->draw(prog_mouse);
+		prog_mouse->unbind();
 
 	}
 };
