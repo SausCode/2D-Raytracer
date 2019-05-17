@@ -104,11 +104,23 @@ public:
 		}
 		if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE)
 		{
-			if (voxeltoggle++ > 0)
+			if (voxeltoggle == 0)
 			{
-				voxeltoggle = 0;
+				voxeltoggle = 1;
 			}
+			else
+				voxeltoggle = 0;
 		}
+		if (key == GLFW_KEY_ENTER && action == GLFW_RELEASE)
+		{
+			if (voxeltoggle == 0 || voxeltoggle==1)
+			{
+				voxeltoggle = 2;
+			}
+			else
+				voxeltoggle = 1;
+		}
+
 		if (key == GLFW_KEY_D && action == GLFW_PRESS)
 		{
 			mycam.pos.x -= 1;
@@ -225,10 +237,8 @@ public:
 		prog_raytrace->addAttribute("vertTex");
 		prog_raytrace->addUniform("passRender");
 		prog_raytrace->addUniform("mouse_pos");
-		prog_raytrace->addUniform("cloud_center");
-		prog_raytrace->addUniform("cloud_radius");
-		prog_raytrace->addUniform("screen_width");
-		prog_raytrace->addUniform("screen_height");
+		prog_raytrace->addUniform("voxeltoggle");
+
 
 		// Initialize the GLSL program.
 		prog_fire = make_shared<Program>();
@@ -1058,10 +1068,8 @@ public:
 		prog_raytrace->bind();
 		glUniform1i(prog_raytrace->getUniform("passRender"), 2);
 		glUniform3fv(prog_raytrace->getUniform("mouse_pos"), 1, &mouse_pos.x);
-		glUniform2fv(prog_raytrace->getUniform("cloud_center"), 1, &cloud_center.x);
-		glUniform1f(prog_raytrace->getUniform("cloud_radius"), cloud_radius);
-		glUniform1i(prog_raytrace->getUniform("screen_width"), width);
-		glUniform1i(prog_raytrace->getUniform("screen_height"), height);
+		glUniform1i(prog_raytrace->getUniform("voxeltoggle"), voxeltoggle);
+
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, FBOcol2);
@@ -1103,10 +1111,7 @@ public:
 		prog_raytrace->bind();
 		glUniform1i(prog_raytrace->getUniform("passRender"), 3);
 		glUniform3fv(prog_raytrace->getUniform("mouse_pos"), 1, &mouse_pos.x);
-		glUniform2fv(prog_raytrace->getUniform("cloud_center"), 1, &cloud_center.x);
-		glUniform1f(prog_raytrace->getUniform("cloud_radius"), cloud_radius);
-		glUniform1i(prog_raytrace->getUniform("screen_width"), width);
-		glUniform1i(prog_raytrace->getUniform("screen_height"), height);
+		glUniform1i(prog_raytrace->getUniform("voxeltoggle"), voxeltoggle);
 
 
 		glActiveTexture(GL_TEXTURE0);
@@ -1147,10 +1152,7 @@ public:
 		prog_raytrace->bind();
 		glUniform1i(prog_raytrace->getUniform("passRender"), 4);
 		glUniform3fv(prog_raytrace->getUniform("mouse_pos"), 1, &mouse_pos.x);
-		glUniform2fv(prog_raytrace->getUniform("cloud_center"), 1, &cloud_center.x);
-		glUniform1f(prog_raytrace->getUniform("cloud_radius"), cloud_radius);
-		glUniform1i(prog_raytrace->getUniform("screen_width"), width);
-		glUniform1i(prog_raytrace->getUniform("screen_height"), height);
+		glUniform1i(prog_raytrace->getUniform("voxeltoggle"), voxeltoggle);
 
 
 		glActiveTexture(GL_TEXTURE0);

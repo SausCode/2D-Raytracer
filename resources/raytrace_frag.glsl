@@ -14,11 +14,7 @@ layout(location = 3) uniform sampler2D cloud_mask_tex;
 
 uniform int passRender;
 uniform vec3 mouse_pos;
-uniform vec2 cloud_center;
-uniform float cloud_radius;
-uniform int screen_width;
-uniform int screen_height;
-
+uniform int voxeltoggle;
 struct traceInfo {
 	vec3 color;
 };
@@ -166,54 +162,30 @@ void main()
 			colorsum *= is_in_cloud.xyz;
 			color.rgb += colorsum;
 		}
-		else if(passRender==4 && is_in_cloud.a==0)
+		else if(passRender==4 && is_in_cloud.a==0 && (voxeltoggle==1|| voxeltoggle==2))
 		{
-//			vec4 Rz = vec4(0, 0, 1,0);
-//			traceInfo t1,t2,t3,t4;
-//			vec4 conedirection = vec4(normals.xy,0,1);
-//			conedirection = crossProduct(Rz, conedirection);
-//			t1 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
-//			conedirection = crossProduct(Rz, conedirection);
-//			t2 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
-//			Rz = vec4(0, 0, -1,0);
-//			conedirection = crossProduct(Rz, conedirection);
-//			t3 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
-//			conedirection = crossProduct(Rz, conedirection);
-//			t4 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
-//			vec3 colorsum = t1.color.rgb + t2.color.rgb + t3.color.rgb + t4.color.rgb;
-//			color.rgb += colorsum;
-
-			mat4 Rz = rotationMatrix(vec3(0, 0, 1), 3.1415926 / 2.);
+			mat4 Rz = rotationMatrix(vec3(0, 0, 1), 3.1415926/2);
 			traceInfo t1,t2,t3,t4;
-			float atan1, atan2, atan3, atan4;
 			vec4 conedirection = vec4(normals.xy,0,1);
-			atan1 = atan(conedirection.y, conedirection.x);
-			atan1 = convertRadianToDegree(atan1);
-			atan1 = checkAngleWithQuadrant(conedirection.xy, atan1);
 			t1 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
 			conedirection = Rz * conedirection;
-			atan2 = atan(conedirection.y, conedirection.x);
-			atan2 = convertRadianToDegree(atan2);
-			atan2 = checkAngleWithQuadrant(conedirection.xy, atan2);
 			t2 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
-			Rz = rotationMatrix(vec3(0, 0, -1), 3.1415926 / 2.);
-			conedirection = Rz * conedirection;
-			atan3 = atan(conedirection.y, conedirection.x);
-			atan3 = convertRadianToDegree(atan3);
-			atan3 = checkAngleWithQuadrant(conedirection.xy, atan3);
-			t3 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
-			conedirection = Rz * conedirection;
-			atan4 = atan(conedirection.y, conedirection.x);
-			atan4 = convertRadianToDegree(atan4);
-			atan4 = checkAngleWithQuadrant(conedirection.xy, atan4);
-			t4 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
-			vec3 colorsum = t1.color.rgb + t2.color.rgb + t3.color.rgb + t4.color.rgb;
+			vec3 colorsum = t1.color.rgb + t2.color.rgb;
+			if(voxeltoggle==2)
+			{
+				Rz = rotationMatrix(vec3(0, 0, -1), 3.1415926 / 2.);
+				conedirection = Rz * conedirection;
+				t3 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
+				conedirection = Rz * conedirection;
+				t4 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
+				colorsum += t3.color.rgb + t4.color.rgb;
+			}
+			//colorsum *= is_in_cloud.xyz;
+
 			color.rgb += colorsum;
 
 		}
 	}
-	
-	
 
 	norm_out = vec4(normals, 1);
 	pos_out = vec4(world_pos, 1);
