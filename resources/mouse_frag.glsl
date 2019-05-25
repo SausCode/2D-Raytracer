@@ -16,12 +16,12 @@ void main()
 	vec3 lp = vec3(100,100,100);
 	vec3 ld = normalize(lp - pos);
 	float light = length(ld);
-	color.rgb = vec3(1,1,0);
 	pos_out.rgb = vec3(1,1,0);
 	norm_out.rgb = vec3(1,1,0);
+	color.rgb = vec3(1,1,0);
 
 	color.a=1;
 
 	color.rgb = vec3(1);
-	 
+
 }

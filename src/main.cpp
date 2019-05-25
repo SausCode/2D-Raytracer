@@ -64,7 +64,6 @@ public:
 
 	//texture for sim
 	GLuint wall_texture, wall_normal_texture, fire_texture, cloud_texture, cloud_normal_texture;
-
 	// textures for position, color, and normal
 	GLuint fb, fb2, fb3, fb4, depth_rb, FBOpos, FBOcol, FBOnorm, FBOcloudmask, FBOpos2, FBOcol2, FBOnorm2, FBOcloudmask2, FBOpos3, FBOcol3, FBOnorm3, FBOcloudmask3, FBOpos4, FBOcol4, FBOnorm4, FBOcloudmask4;
 
@@ -121,14 +120,6 @@ public:
 				voxeltoggle = 1;
 		}
 
-		if (key == GLFW_KEY_D && action == GLFW_PRESS)
-		{
-			mycam.pos.x -= 1;
-		}
-		if (key == GLFW_KEY_A && action == GLFW_PRESS)
-		{
-			mycam.pos.x += 1;
-		}
 		if (key == GLFW_KEY_K && action == GLFW_PRESS)
 		{
 			get_SSBO_back();
@@ -458,6 +449,14 @@ public:
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
+//		//[TWOTEXTURES]
+////set the 2 textures to the correct samplers in the fragment shader:
+//		GLuint CharacTex1Location = glGetUniformLocation(prog_mouse->pid, "tex");
+//
+//		// Then bind the uniform samplers to texture units:
+//		glUseProgram(prog_mouse->pid);
+//		glUniform1i(CharacTex1Location, 0);
+//
 		//texture
 		str = resourceDirectory + "/lvl1.jpg";
 		strcpy(filepath, str.c_str());
@@ -1182,7 +1181,7 @@ public:
 		//glUniform1f(prog_fire->getUniform("t"), t);
 		//glUniform2fv(prog_fire->getUniform("to"), 1, &fire_to.x);
 		//glUniform2fv(prog_fire->getUniform("to2"), 1, &fire_to2.x);
-		glUniformMatrix4fv(prog_fire->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		glUniformMatrix4fv(prog_mouse->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		mouse->draw(prog_mouse);
 		prog_mouse->unbind();
 
