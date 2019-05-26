@@ -102,6 +102,8 @@ public:
 	float rotate_z = 20.f;
 	glm::vec2 resolution = glm::vec2(1920, 1080);
 	bool fire_status = false;
+	float cone_angle = 1.0;
+
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
@@ -165,6 +167,14 @@ public:
 		{
 			water_pos.z -= .1;
 			std::cout << glm::to_string(water_pos) << std::endl;
+		}
+		if (key == GLFW_KEY_KP_ADD && action == GLFW_PRESS)
+		{
+			cone_angle += .1;
+		}
+		if (key == GLFW_KEY_KP_SUBTRACT && action == GLFW_PRESS)
+		{
+			cone_angle -= .1;
 		}
 	}
 
@@ -295,6 +305,8 @@ public:
 		prog_raytrace->addUniform("cloud_radius");
 		prog_raytrace->addUniform("screen_width");
 		prog_raytrace->addUniform("screen_height");
+		prog_raytrace->addUniform("cone_angle");
+
 
 		// Initialize the GLSL program.
 		prog_fire = make_shared<Program>();
@@ -478,6 +490,7 @@ public:
 		char filepath[1000];
 
 		std::string str = resourceDirectory + "/water_hd.jpg";
+		str = resourceDirectory + "/watercolor_water3.jpg";
 		//str = resourceDirectory + "/water_ripple.jpg";
 		//str = resourceDirectory + "/water.png";
 		unsigned char* data = stbi_load(str.c_str(), &width, &height, &channels, 4);
@@ -1248,6 +1261,8 @@ public:
 		glUniform1f(prog_raytrace->getUniform("cloud_radius"), cloud_radius);
 		glUniform1i(prog_raytrace->getUniform("screen_width"), width);
 		glUniform1i(prog_raytrace->getUniform("screen_height"), height);
+		glUniform1f(prog_raytrace->getUniform("cone_angle"), cone_angle);
+
 
 		FBOmask2 = FBOmask;
 		glActiveTexture(GL_TEXTURE0);
@@ -1294,6 +1309,8 @@ public:
 		glUniform1f(prog_raytrace->getUniform("cloud_radius"), cloud_radius);
 		glUniform1i(prog_raytrace->getUniform("screen_width"), width);
 		glUniform1i(prog_raytrace->getUniform("screen_height"), height);
+		glUniform1f(prog_raytrace->getUniform("cone_angle"), cone_angle);
+
 
 
 		glActiveTexture(GL_TEXTURE0);
@@ -1337,6 +1354,7 @@ public:
 		glUniform1f(prog_raytrace->getUniform("cloud_radius"), cloud_radius);
 		glUniform1i(prog_raytrace->getUniform("screen_width"), width);
 		glUniform1i(prog_raytrace->getUniform("screen_height"), height);
+		glUniform1f(prog_raytrace->getUniform("cone_angle"), cone_angle);
 
 
 		glActiveTexture(GL_TEXTURE0);

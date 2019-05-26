@@ -19,6 +19,7 @@ uniform vec2 cloud_center;
 uniform float cloud_radius;
 uniform int screen_width;
 uniform int screen_height;
+uniform float cone_angle;
 
 struct traceInfo {
 	vec3 color;
@@ -98,7 +99,7 @@ void main()
 
 	if (is_in_cloud.a > 0)
 	{
-		coneHalfAngle = .5;
+		coneHalfAngle = cone_angle;
 		normals = vec3(0,1,0);
 	}
 
@@ -111,12 +112,15 @@ void main()
 	
 		if (passRender == 2)
 		{
-			traceInfo t;
+			traceInfo t, t1, t2;
 			if (is_in_cloud.a == 0)
 				t = cone_tracing(normals.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
 			else
 			{
-				t = cone_tracing(lightdirection, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
+				vec2 reflection_ray = reflect(lightdirection, normalize(normals.xy));
+				t1 = cone_tracing(reflection_ray, world_pos.xy, coneHalfAngle/5, 15, is_in_cloud.a, passRender);
+				t2 = cone_tracing(lightdirection, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
+				t.color = t1.color + t2.color;
 				t.color *= is_in_cloud.xyz;
 			}
 			color.rgb += t.color;
