@@ -37,7 +37,7 @@ vec2 fragTopAndBottomAngles(vec2 fragpos, vec3 lightpos){
 	vec2 upper_right = vec2(fragpos.x+(1.0f/screen_width), fragpos.y+(1.0f/screen_width));
 	vec2 upper_left = vec2(fragpos.x, fragpos.y+(1.0f/screen_width));
 
-	float min, max;
+	float minAngle, maxAngle;
 	vec2 pos[4] = vec2[](lower_left, lower_right, upper_right, upper_left);
 	float angles[4];
 
@@ -55,17 +55,17 @@ vec2 fragTopAndBottomAngles(vec2 fragpos, vec3 lightpos){
 
 	}
 
-	min = angles[0];
-	max = angles[0];
+	minAngle = angles[0];
+	maxAngle = angles[0];
 
 	for(int i=1; i<4; i++){
-		if(angles[i]<min)
-			min = angles[i];
-		else if(angles[i]>max)
-			max = angles[i];
+		if(angles[i]<minAngle)
+			minAngle = angles[i];
+		else if(angles[i]>maxAngle)
+			maxAngle = angles[i];
 	}
 
-	return vec2(min, max);
+	return vec2(minAngle, maxAngle);
 }
 
 void main()
@@ -85,7 +85,6 @@ void main()
 		cloud_mask_out = vec4(0);
 		return;
 	}
-
 
 	normals *= -1;
 	

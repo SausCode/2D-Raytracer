@@ -1,4 +1,4 @@
-#version 430
+#version 430 core
 
 in vec2 fragTex;
 
@@ -61,10 +61,10 @@ traceInfo cone_tracing(vec2 conedirection, vec2 pixelpos, float angle,int stepco
 		pixelposition = pixelpos + conedirection * distanceFromConeOrigin;
 		texpos = voxel_transform(pixelposition);
 		trace += sampling(conedirection, texpos, mip, pixelposition, is_in_cloud);
-		distanceFromConeOrigin += voxelSize*3;
+		distanceFromConeOrigin += voxelSize * 3;
 		
-		if(	(trace.a>0.25 && is_in_cloud==0) || 
-			(trace.a>0.5 && is_in_cloud > 0) &&
+		if(	((trace.a>0.25 && is_in_cloud==0) || 
+			(trace.a>0.5 && is_in_cloud > 0)) &&
 			(passNum!=3))	{ break; }
 	}
 	t.color = trace.rgb;
@@ -98,19 +98,21 @@ void main()
 	if (world_pos != vec3(0))
 	{
 	
-		if (passRender == 2)
+		if (passRender == 2 && (voxeltoggle<=4 && voxeltoggle>0))
 		{
 			traceInfo t;
-			if (is_in_cloud.a == 0)
+			if (is_in_cloud.a == 0.0)
+			{
 				t = cone_tracing(normals.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
+			}
 			else
 			{
 				t = cone_tracing(lightdirection, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
 				t.color *= is_in_cloud.xyz;
 			}
-			color.rgb += t.color;
+			color.rgb = t.color;
 		}
-		else if (passRender == 3 && is_in_cloud.a > 0)
+		else if (passRender == 3 && is_in_cloud.a > 0.0 && (voxeltoggle<=4 && voxeltoggle>1))
 		{
 
 			mat4 Rz = rotationMatrix(vec3(0, 0, 1), 3.1415926 / 2.);
@@ -123,13 +125,15 @@ void main()
 			t3 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
 			conedirection = Rz * conedirection;
 			t4 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
-			vec3 colorsum = t1.color.rgb + t2.color.rgb + t3.color.rgb + t4.color.rgb;
+			vec3 colorsum = t1.color + t2.color + t3.color + t4.color;
 			colorsum *= is_in_cloud.xyz;
 			color.rgb += colorsum;
 		}
-		else if(passRender==4 && is_in_cloud.a==0 && (voxeltoggle==1 || voxeltoggle==2))
+		
+
+		if(passRender==4 && is_in_cloud.a==0.0 && (voxeltoggle<=4 && voxeltoggle>2))
 		{
-			if(voxeltoggle==2)
+			if(voxeltoggle==4)
 				is_in_cloud.a = 1;
 			mat4 Rz = rotationMatrix(vec3(0, 0, 1), 3.1415926/2);
 			traceInfo t1,t2,t3,t4;
@@ -142,12 +146,14 @@ void main()
 			t3 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
 			conedirection = Rz * conedirection;
 			t4 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
-			vec3 colorsum = t1.color.rgb + t2.color.rgb + t3.color.rgb + t4.color.rgb;
+			vec3 colorsum = t1.color + t2.color + t3.color + t4.color;
 			color.rgb += colorsum;
-
 		}
 	}
-
+	else
+	{
+		color.rgb = texturecolor;
+	}
 	norm_out = vec4(normals, 1);
 	pos_out = vec4(world_pos, 1);
 	cloud_mask_out = is_in_cloud;

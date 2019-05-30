@@ -103,21 +103,12 @@ public:
 		}
 		if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE)
 		{
-			if (voxeltoggle == 0)
+			voxeltoggle++;
+			if (voxeltoggle >= 5)
 			{
-				voxeltoggle = 1;
-			}
-			else
 				voxeltoggle = 0;
-		}
-		if (key == GLFW_KEY_ENTER && action == GLFW_RELEASE)
-		{
-			if (voxeltoggle == 0 || voxeltoggle==1)
-			{
-				voxeltoggle = 2;
 			}
-			else
-				voxeltoggle = 1;
+
 		}
 
 		if (key == GLFW_KEY_K && action == GLFW_PRESS)
@@ -413,7 +404,7 @@ public:
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
-		str = resourceDirectory + "/clouds_sprite_normal4 (1).png";
+		str = resourceDirectory + "/clouds_sprite_normal.png";
 		strcpy(filepath, str.c_str());
 		data = stbi_load(filepath, &width, &height, &channels, 4);
 		glGenTextures(1, &cloud_normal_texture);
@@ -1175,8 +1166,8 @@ public:
 		S = glm::scale(glm::mat4(1), glm::vec3(0.025 * 2, 0.05 * 2, 0.05));
 		R = glm::rotate(glm::mat4(1), glm::radians(180.f), glm::vec3(0, 0, 1));
 		M = T * S * R;
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, fire_texture);
+	/*	glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, fire_texture);*/
 		//update_fire_tex(frametime);
 		//glUniform1f(prog_fire->getUniform("t"), t);
 		//glUniform2fv(prog_fire->getUniform("to"), 1, &fire_to.x);
