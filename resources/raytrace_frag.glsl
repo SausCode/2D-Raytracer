@@ -5,12 +5,12 @@ in vec2 fragTex;
 layout(location = 0) out vec4 color;
 layout(location = 1) out vec4 pos_out;
 layout(location = 2) out vec4 norm_out;
-layout(location = 3) out vec4 cloud_mask_out;
 
 layout(location = 0) uniform sampler2D col_tex;
 layout(location = 1) uniform sampler2D pos_tex;
 layout(location = 2) uniform sampler2D norm_tex;
 layout(location = 3) uniform sampler2D cloud_mask_tex;
+layout(location = 4) uniform sampler2D no_shadow_col_tex;
 
 uniform int passRender;
 uniform vec3 mouse_pos;
@@ -33,12 +33,12 @@ vec4 sampling(vec2 conedirection, vec2 texposition, float mipmap, vec2 pixpositi
 	vec4 colA = texture(col_tex, texposition.xy, imip);
 	vec4 colB = texture(col_tex, texposition.xy, imip + 1);
 	float d = 1.0;
-	if(is_in_cloud==0)
+	/*if(is_in_cloud==0)
 	{
 		vec2 norm = -texture(norm_tex, texposition.xy, 1).xy;
 		d = dot(normalize(norm), normalize(conedirection));
 		d = clamp(d, 0, 1);
-	}
+	}*/
 		
 	vec4 col = mix(colA, colB, linint)*d;
 	return col;
@@ -48,7 +48,7 @@ traceInfo cone_tracing(vec2 conedirection, vec2 pixelpos, float angle,int stepco
 {
 	traceInfo t;
 	conedirection = normalize(conedirection);
-	float voxelSize = 2. / 256.;
+	float voxelSize = 1. / 1080.;
 	vec4 trace = vec4(0);
 	float distanceFromConeOrigin = voxelSize * 2;
 	float coneHalfAngle = angle;
@@ -57,15 +57,18 @@ traceInfo cone_tracing(vec2 conedirection, vec2 pixelpos, float angle,int stepco
 	for (int i = 0; i < stepcount; i++)
 	{
 		float coneDiameter = 2 * tan(coneHalfAngle) * distanceFromConeOrigin;
-		float mip = log2(coneDiameter / voxelSize);
+		float mip = log2(coneDiameter / voxelSize)*0.8 -1;
 		pixelposition = pixelpos + conedirection * distanceFromConeOrigin;
 		texpos = voxel_transform(pixelposition);
-		trace += sampling(conedirection, texpos, mip, pixelposition, is_in_cloud);
-		distanceFromConeOrigin += voxelSize * 3;
-		
+		trace += sampling(conedirection, texpos, mip, pixelposition, is_in_cloud)*5;
+		distanceFromConeOrigin += coneDiameter;
+
+		/*if (trace.a > 5.95)
+			break;*/
+		/*
 		if(	((trace.a>0.25 && is_in_cloud==0) || 
 			(trace.a>0.5 && is_in_cloud > 0)) &&
-			(passNum!=3))	{ break; }
+			(passNum!=3))	{ break; }*/
 	}
 	t.color = trace.rgb;
 	return t;
@@ -86,12 +89,14 @@ mat4 rotationMatrix(vec3 axis, float angle)
 void main()
 {
 	float coneHalfAngle = 1.05; // 60 degree cone!
-	vec3 texturecolor = texture(col_tex, fragTex).rgb;
+	vec3 texturecolor = texture(col_tex, fragTex,0).rgb;
 	vec3 normals = texture(norm_tex, fragTex).rgb;
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
 	vec4 is_in_cloud = texture(cloud_mask_tex, fragTex);
+	vec3 no_shadow_texture_color = texture(no_shadow_col_tex, fragTex).rgb;
 
 	color = vec4(texturecolor,1);	
+	//color = vec4(no_shadow_texture_color,1);	
 
 	vec2 lightdirection = normalize(mouse_pos.xy - world_pos.xy);
 
@@ -103,14 +108,16 @@ void main()
 			traceInfo t;
 			if (is_in_cloud.a == 0.0)
 			{
-				t = cone_tracing(normals.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
+				coneHalfAngle = 0.7; 
+				t = cone_tracing(normals.xy, world_pos.xy, coneHalfAngle, 7, is_in_cloud.a, passRender);
+				t.color *= no_shadow_texture_color.xyz;
 			}
 			else
 			{
 				t = cone_tracing(lightdirection, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
 				t.color *= is_in_cloud.xyz;
 			}
-			color.rgb = t.color;
+			color.rgb += t.color;
 		}
 		else if (passRender == 3 && is_in_cloud.a > 0.0 && (voxeltoggle<=4 && voxeltoggle>1))
 		{
@@ -154,7 +161,7 @@ void main()
 	{
 		color.rgb = texturecolor;
 	}
+	//color.rgb = texturecolor;
 	norm_out = vec4(normals, 1);
 	pos_out = vec4(world_pos, 1);
-	cloud_mask_out = is_in_cloud;
 }

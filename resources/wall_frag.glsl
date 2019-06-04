@@ -28,6 +28,8 @@ void main()
 	cloud_mask_out = vec4(texturecolor.rgb,0);
 	pos_out = worldPos;
 	norm_out = vec4(readynormal, 1);
+	norm_out = vec4(normalize(fragNor), 1);
+	
 	color = texturecolor;
 	if(color.a==0)
 		discard;
