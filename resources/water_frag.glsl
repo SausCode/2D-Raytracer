@@ -25,7 +25,7 @@ void main()
 	vec2 cPos = -1.0 + 2.0 * gl_FragCoord.xy / resolution.xy;
 	float cLength = length(cPos);
 	vec2 uv = gl_FragCoord.xy/resolution.xy+(cPos/cLength)*cos(cLength*12.0-t*4.0)*0.03;
-	vec3 col = texture2D(tex,uv).xyz;
+	vec3 col = texture(tex,uv).xyz;
 	pos_out = worldPos;
 	pos_out.z = 0;
 	color.rgb = col;

@@ -476,7 +476,7 @@ public:
 
 		// Initialize mesh.
 		mouse = make_shared<Shape>();
-		mouse->loadMesh(resourceDirectory + "/sphere.obj");
+		mouse->loadMesh(resourceDirectory + "/internet_square.obj");
 		mouse->resize();
 		mouse->init();
 
