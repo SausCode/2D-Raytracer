@@ -23,6 +23,9 @@ using namespace glm;
 #define FPS 60
 
 const int NUM_CLOUDS = 100;
+const float WAVE_SPEED1 = 0.003f;
+const float WAVE_SPEED2 = 0.001f;
+
 
 double get_last_elapsed_time() {
 	static double lasttime = glfwGetTime();
@@ -95,8 +98,9 @@ public:
 	vec2 cloud_center = { 4.75f, 0.0f };
 	float cloud_radius = 2.0;
 	glm::vec3 water_pos = glm::vec3(-0.200000, -0.80000, -0.400000);
-	float rotate_z = 75.f;
-
+	float rotate_z = 45.f;
+	float moveFactor1 = 0.0f;
+	float moveFactor2 = 0.0f;
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
@@ -203,6 +207,9 @@ public:
 		/*prog_water->addUniform("t");
 		prog_water->addUniform("light_pos");
 		prog_water->addUniform("resolution");*/
+		prog_water->addUniform("moveFactor1");
+		prog_water->addUniform("moveFactor2");
+
 		prog_water->addAttribute("vertPos");
 		prog_water->addAttribute("vertNor");
 		prog_water->addAttribute("vertTex");
@@ -532,7 +539,7 @@ public:
 		glUniform1i(Tex1Location, 0);
 		glUniform1i(Tex2Location, 1);
 
-		str = resourceDirectory + "/water_normal_texture1.jpg";
+		str = resourceDirectory + "/water_dudv_texture.jpg";
 		data = stbi_load(str.c_str(), &width, &height, &channels, 4);
 		glGenTextures(1, &water_normal_texture1);
 		glActiveTexture(GL_TEXTURE0);
@@ -544,7 +551,7 @@ public:
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
-		str = resourceDirectory + "/water_normal_texture2.jpg";
+		str = resourceDirectory + "/water_normal_texture2.png";
 		strcpy(filepath, str.c_str());
 		data = stbi_load(filepath, &width, &height, &channels, 4);
 		glGenTextures(1, &water_normal_texture2);
@@ -559,8 +566,8 @@ public:
 
 		//[TWOTEXTURES]
 		//set the 2 textures to the correct samplers in the fragment shader:
-		GLuint waterTex1Location = glGetUniformLocation(prog_water->pid, "normtex1");
-		GLuint waterTex2Location = glGetUniformLocation(prog_water->pid, "normtex2");
+		GLuint waterTex1Location = glGetUniformLocation(prog_water->pid, "dudvtex");
+		GLuint waterTex2Location = glGetUniformLocation(prog_water->pid, "normtex");
 
 		// Then bind the uniform samplers to texture units:
 		glUseProgram(prog_water->pid);
@@ -979,7 +986,14 @@ public:
 		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.2, 0.5));
 		R = glm::rotate(glm::mat4(1), glm::radians(rotate_z), glm::vec3(1, 0, 0));
 		M = T*R*S;
-		////glUniform1f(prog_water->getUniform("t"), timeDelta);
+		moveFactor1 += WAVE_SPEED1 * glfwGetTime();
+		if (moveFactor1 >= 1)
+			moveFactor1 = 0;
+		glUniform1f(prog_water->getUniform("moveFactor1"), moveFactor1);
+		moveFactor2 += WAVE_SPEED2 * glfwGetTime();
+		if (moveFactor2 >= 1)
+			moveFactor2 = 0;
+		glUniform1f(prog_water->getUniform("moveFactor2"), moveFactor2);
 		//glUniform1f(prog_water->getUniform("t"), glfwGetTime());
 		//glUniform3fv(prog_water->getUniform("light_pos"), 1, &mouse_pos.x);
 		//glUniform2f(prog_water->getUniform("resolution"), resolution.x, resolution.y);
@@ -1257,56 +1271,10 @@ public:
 };
 
 
-vec2 voxel_transform(vec2 pos)
-{
-	vec2 texpos = pos + vec2(1, 1);
-	texpos /= 2;
-	return texpos;
-}
-
-vec4 sampling(vec2 conedirection, vec2 texposition, float mipmap, vec2 pixposition, float is_in_cloud)
-{
-	
-	vec4 col = vec4(0);
-	return col;
-}
-
-vec4 cone_tracing(vec2 conedirection, vec2 pixelpos, float angle, int stepcount, float is_in_cloud, int passNum)
-{
-	vec4 t = vec4(0);
-	conedirection = normalize(conedirection);
-	float voxelSize = 2. / 256.;
-	voxelSize = 1./1080.;
-	vec4 trace = vec4(0);
-	float distanceFromConeOrigin = voxelSize * 2;
-	float coneHalfAngle = angle;
-	vec2 texpos;
-	vec2 pixelposition;
-	for (int i = 0; i < stepcount; i++)
-	{
-		float coneDiameter = 2 * tan(coneHalfAngle) * distanceFromConeOrigin;
-		float mip = log2(coneDiameter / voxelSize);
-		pixelposition = pixelpos + conedirection * distanceFromConeOrigin;
-		texpos = voxel_transform(pixelposition);
-		trace += sampling(conedirection, texpos, mip, pixelposition, is_in_cloud);
-		distanceFromConeOrigin += coneDiameter;// voxelSize * 2;
-		cout << distanceFromConeOrigin << ", " << mip << endl;
-		if (trace.a > 5.95)
-			break;
-		/*
-		if(	((trace.a>0.25 && is_in_cloud==0) ||
-			(trace.a>0.5 && is_in_cloud > 0)) &&
-			(passNum!=3))	{ break; }*/
-	}
-	
-	return t;
-}
 
 //*********************************************************************************************************
 int main(int argc, char **argv)
 {
-	cone_tracing(vec2(0, 1), vec2(0, 0), 0.6, 25, 0, 0);
-
 	// Where the resources are loaded from
 	std::string resourceDir = "../resources";
 
