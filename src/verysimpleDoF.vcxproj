@@ -153,6 +153,8 @@
     <None Include="..\resources\raytrace_vert.glsl" />
     <None Include="..\resources\wall_frag.glsl" />
     <None Include="..\resources\wall_vert.glsl" />
+    <None Include="..\resources\water_frag.glsl" />
+    <None Include="..\resources\water_vert.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
