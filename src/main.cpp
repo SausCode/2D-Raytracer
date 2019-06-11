@@ -66,7 +66,7 @@ public:
 	camera mycam;
 
 	//texture for sim
-	GLuint wall_texture, wall_normal_texture, fire_texture, cloud_texture, cloud_normal_texture, water_texture, water_normal_texture1, water_normal_texture2;
+	GLuint wall_texture, wall_normal_texture, fire_texture, cloud_texture, cloud_normal_texture, water_texture, water_normal_texture, water_dudv_texture;
 	// textures for position, color, and normal
 	GLuint fb, fb2, fb3, fb4, depth_rb, FBOpos, FBOcol, FBOnorm, FBOcloudmask, FBOpos2, FBOcol2, FBOnorm2, FBOcloudmask2, FBOpos3, FBOcol3, FBOnorm3, FBOcloudmask3, FBOpos4, FBOcol4, FBOnorm4, FBOcloudmask4;
 
@@ -99,8 +99,7 @@ public:
 	float cloud_radius = 2.0;
 	glm::vec3 water_pos = glm::vec3(-0.200000, -0.80000, -0.400000);
 	float rotate_z = 45.f;
-	float moveFactor1 = 0.0f;
-	float moveFactor2 = 0.0f;
+	float moveFactor = 0.0f;
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
@@ -207,9 +206,7 @@ public:
 		/*prog_water->addUniform("t");
 		prog_water->addUniform("light_pos");
 		prog_water->addUniform("resolution");*/
-		prog_water->addUniform("moveFactor1");
-		prog_water->addUniform("moveFactor2");
-
+		prog_water->addUniform("moveFactor");
 		prog_water->addAttribute("vertPos");
 		prog_water->addAttribute("vertNor");
 		prog_water->addAttribute("vertTex");
@@ -539,11 +536,11 @@ public:
 		glUniform1i(Tex1Location, 0);
 		glUniform1i(Tex2Location, 1);
 
-		str = resourceDirectory + "/water_dudv_texture.jpg";
+		str = resourceDirectory + "/water_texture.jpg";
 		data = stbi_load(str.c_str(), &width, &height, &channels, 4);
-		glGenTextures(1, &water_normal_texture1);
+		glGenTextures(1, &water_texture);
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, water_normal_texture1);
+		glBindTexture(GL_TEXTURE_2D, water_texture);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -551,12 +548,24 @@ public:
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
-		str = resourceDirectory + "/water_normal_texture2.png";
+		str = resourceDirectory + "/water_dudv_texture.jpg";
+		data = stbi_load(str.c_str(), &width, &height, &channels, 4);
+		glGenTextures(1, &water_dudv_texture);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, water_dudv_texture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		str = resourceDirectory + "/water_normal_texture1.png";
 		strcpy(filepath, str.c_str());
 		data = stbi_load(filepath, &width, &height, &channels, 4);
-		glGenTextures(1, &water_normal_texture2);
+		glGenTextures(1, &water_normal_texture);
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, water_normal_texture2);
+		glBindTexture(GL_TEXTURE_2D, water_normal_texture);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -568,11 +577,13 @@ public:
 		//set the 2 textures to the correct samplers in the fragment shader:
 		GLuint waterTex1Location = glGetUniformLocation(prog_water->pid, "dudvtex");
 		GLuint waterTex2Location = glGetUniformLocation(prog_water->pid, "normtex");
+		GLuint waterTex3Location = glGetUniformLocation(prog_water->pid, "coltex");
 
 		// Then bind the uniform samplers to texture units:
 		glUseProgram(prog_water->pid);
 		glUniform1i(waterTex1Location, 0);
 		glUniform1i(waterTex2Location, 1);
+		glUniform1i(waterTex3Location, 2);
 
 
 		glUseProgram(prog_deferred->pid);
@@ -978,22 +989,20 @@ public:
 
 		prog_water->bind();
 		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		//glActiveTexture(GL_TEXTURE0);
-		//glBindTexture(GL_TEXTURE_2D, water_texture);
-		//glActiveTexture(GL_TEXTURE1);
-		//glBindTexture(GL_TEXTURE_2D, water_displacement_texture);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, water_dudv_texture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, water_normal_texture);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, water_texture);
 		T = glm::translate(glm::mat4(1), water_pos);
 		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.2, 0.5));
 		R = glm::rotate(glm::mat4(1), glm::radians(rotate_z), glm::vec3(1, 0, 0));
 		M = T*R*S;
-		moveFactor1 += WAVE_SPEED1 * glfwGetTime();
-		if (moveFactor1 >= 1)
-			moveFactor1 = 0;
-		glUniform1f(prog_water->getUniform("moveFactor1"), moveFactor1);
-		moveFactor2 += WAVE_SPEED2 * glfwGetTime();
-		if (moveFactor2 >= 1)
-			moveFactor2 = 0;
-		glUniform1f(prog_water->getUniform("moveFactor2"), moveFactor2);
+		moveFactor += WAVE_SPEED1 * glfwGetTime();
+		if (moveFactor >= 1)
+			moveFactor = 0;
+		glUniform1f(prog_water->getUniform("moveFactor"), moveFactor);
 		//glUniform1f(prog_water->getUniform("t"), glfwGetTime());
 		//glUniform3fv(prog_water->getUniform("light_pos"), 1, &mouse_pos.x);
 		//glUniform2f(prog_water->getUniform("resolution"), resolution.x, resolution.y);
