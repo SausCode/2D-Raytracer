@@ -23,7 +23,7 @@ using namespace glm;
 #define FPS 60
 
 const int NUM_CLOUDS = 100;
-const float WAVE_SPEED1 = 0.003f;
+const float WAVE_SPEED1 = 0.0005f;
 const float WAVE_SPEED2 = 0.001f;
 
 
@@ -100,6 +100,7 @@ public:
 	glm::vec3 water_pos = glm::vec3(-0.200000, -0.80000, -0.400000);
 	float rotate_z = 45.f;
 	float moveFactor = 0.0f;
+	vec4 plane = vec4(0, 1, 0, -(water_pos.y + 0.14));
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
@@ -188,6 +189,8 @@ public:
 		prog_wall->addAttribute("vertPos");
 		prog_wall->addAttribute("vertNor");
 		prog_wall->addAttribute("vertTex");
+		prog_wall->addUniform("plane");
+
 
 		// Initialize the GLSL program.
 		prog_water = make_shared<Program>();
@@ -303,7 +306,7 @@ public:
 		prog_cloud->addAttribute("vertPos");
 		prog_cloud->addAttribute("vertNor");
 		prog_cloud->addAttribute("vertTex");
-		//prog_cloud->addAttribute("InstancePos");
+		prog_cloud->addUniform("plane");
 	}
 
 	void initGeom(const std::string& resourceDirectory)
@@ -922,6 +925,7 @@ public:
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
 		glViewport(0, 0, width, height);
 
+
 		auto P = std::make_shared<MatrixStack>();
 		glm::mat4 M, T, S, R;
 
@@ -931,6 +935,8 @@ public:
 		glBindTexture(GL_TEXTURE_2D, wall_normal_texture);
 
 		prog_wall->bind();
+		glUniform4fv(prog_wall->getUniform("plane"), 1, &plane.x);
+
 
 		// WALLS
 		// Top Walls
@@ -985,39 +991,11 @@ public:
 		//done, unbind stuff
 		prog_wall->unbind();
 
-		glEnable(GL_DEPTH_TEST);
-
-		prog_water->bind();
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, water_dudv_texture);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, water_normal_texture);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, water_texture);
-		T = glm::translate(glm::mat4(1), water_pos);
-		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.2, 0.5));
-		R = glm::rotate(glm::mat4(1), glm::radians(rotate_z), glm::vec3(1, 0, 0));
-		M = T*R*S;
-		moveFactor += WAVE_SPEED1 * glfwGetTime();
-		if (moveFactor >= 1)
-			moveFactor = 0;
-		glUniform1f(prog_water->getUniform("moveFactor"), moveFactor);
-		//glUniform1f(prog_water->getUniform("t"), glfwGetTime());
-		//glUniform3fv(prog_water->getUniform("light_pos"), 1, &mouse_pos.x);
-		//glUniform2f(prog_water->getUniform("resolution"), resolution.x, resolution.y);
-		glUniformMatrix4fv(prog_water->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		water->draw(prog_water);
-		//done, unbind stuff
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		prog_water->unbind();
-		glDisable(GL_DEPTH_TEST);
-
 		/*
-			DRAW CLOUD
-		*/
+	DRAW CLOUD
+*/
 
-		// Draw mesh using GLSL
+// Draw mesh using GLSL
 		prog_cloud->bind();
 
 		glActiveTexture(GL_TEXTURE0);
@@ -1026,6 +1004,7 @@ public:
 		glBindTexture(GL_TEXTURE_2D, cloud_normal_texture);
 
 		glUniform3fv(prog_cloud->getUniform("light_pos"), 1, &mouse_pos.x);
+		glUniform4fv(prog_cloud->getUniform("plane"), 1, &plane.x);
 		glBindVertexArray(VertexArrayIDBox2);
 		glDisable(GL_DEPTH_TEST);
 		S = glm::scale(glm::mat4(1), glm::vec3(0.1, 0.1, 1));
@@ -1040,6 +1019,37 @@ public:
 		//}
 
 		prog_cloud->unbind();
+
+
+		glEnable(GL_DEPTH_TEST);
+		prog_water->bind();
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, water_dudv_texture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, water_normal_texture);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, water_texture);
+		T = glm::translate(glm::mat4(1), water_pos);
+		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.2, 0.5));
+		R = glm::rotate(glm::mat4(1), glm::radians(rotate_z), glm::vec3(1, 0, 0));
+		M = T*R*S;
+		moveFactor += WAVE_SPEED1;
+		if (moveFactor >= 1)
+			moveFactor = 0;
+		glUniform1f(prog_water->getUniform("moveFactor"), moveFactor);
+
+		glUniform4fv(prog_water->getUniform("plane"), 1, &plane.x);
+		//glUniform1f(prog_water->getUniform("t"), glfwGetTime());
+		//glUniform3fv(prog_water->getUniform("light_pos"), 1, &mouse_pos.x);
+		//glUniform2f(prog_water->getUniform("resolution"), resolution.x, resolution.y);
+		glUniformMatrix4fv(prog_water->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		water->draw(prog_water);
+		//done, unbind stuff
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		prog_water->unbind();
+		glDisable(GL_DEPTH_TEST);
+
 
 		// Save output to framebuffer
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);

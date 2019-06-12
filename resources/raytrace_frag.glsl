@@ -95,8 +95,8 @@ void main()
 	vec4 is_in_cloud = texture(cloud_mask_tex, fragTex);
 	vec3 no_shadow_texture_color = texture(no_shadow_col_tex, fragTex).rgb;
 
-	color = vec4(texturecolor,1);	
-	//color = vec4(no_shadow_texture_color,1);	
+	//color = vec4(texturecolor,1);	
+	color = vec4(no_shadow_texture_color,1);	
 	//color = vec4(normals,1);
 
 	vec2 lightdirection = normalize(mouse_pos.xy - world_pos.xy);

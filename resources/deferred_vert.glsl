@@ -11,4 +11,5 @@ void main()
 	gl_Position = vertPos;
 	fragTex = vertTex;
 	fragNor = (vec4(vertNor, 0.0)).xyz;
+
 }
