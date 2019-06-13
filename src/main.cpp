@@ -98,7 +98,7 @@ public:
 	vec2 cloud_center = { 4.75f, 0.0f };
 	float cloud_radius = 2.0;
 	glm::vec3 water_pos = glm::vec3(-0.200000, -0.80000, -0.400000);
-	float rotate_z = 45.f;
+	float rotate = 55.f;
 	float moveFactor = 0.0f;
 	vec4 plane = vec4(0, 1, 0, -(water_pos.y + 0.14));
 
@@ -137,7 +137,7 @@ public:
 		}
 		if (key == GLFW_KEY_R && action == GLFW_PRESS)
 		{
-			rotate_z += 5.0f;
+			rotate += 5.0f;
 		}
 	}
 
@@ -426,19 +426,19 @@ public:
 
 		// Initialize mesh.
 		wall = make_shared<Shape>();
-		wall->loadMesh(resourceDirectory + "/internet_square.obj");
+		wall->loadMesh(resourceDirectory + "/square.obj");
 		wall->resize();
 		wall->init();
 
 		// Initialize mesh.
 		water = make_shared<Shape>();
-		water->loadMesh(resourceDirectory + "/internet_square.obj");
+		water->loadMesh(resourceDirectory + "/square.obj");
 		water->resize();
 		water->init();
 
 		// Initialize mesh.
 		mouse = make_shared<Shape>();
-		mouse->loadMesh(resourceDirectory + "/internet_square.obj");
+		mouse->loadMesh(resourceDirectory + "/square.obj");
 		mouse->resize();
 		mouse->init();
 
@@ -1031,8 +1031,8 @@ public:
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, water_texture);
 		T = glm::translate(glm::mat4(1), water_pos);
-		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.2, 0.5));
-		R = glm::rotate(glm::mat4(1), glm::radians(rotate_z), glm::vec3(1, 0, 0));
+		S = glm::scale(glm::mat4(1), glm::vec3(1, 0.2, 1));
+		R = glm::rotate(glm::mat4(1), glm::radians(rotate), glm::vec3(1, 0, 0));
 		M = T*R*S;
 		moveFactor += WAVE_SPEED1;
 		if (moveFactor >= 1)

@@ -22,5 +22,5 @@ void main()
 	gl_Position = M * vec4(vertPos, 1.0);
 	worldPos = M * vec4(vertPos, 1.0);
 	fragNor = (M * vec4(vertNor, 0.0)).xyz;
-	fragTex = vertTex;
+	fragTex = vec2(vertTex.x/2.0 + 0.5, vertTex.y/2.0 +0.5);
 }

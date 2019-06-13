@@ -23,9 +23,12 @@ uniform float moveFactor;
 
 void main()
 {
-	vec2 distortedTexCoords = texture(dudvtex, vec2(fragTex.x + moveFactor, fragTex.y)).rg * 0.1;
-	distortedTexCoords = fragTex + vec2(distortedTexCoords.x,distortedTexCoords.y+moveFactor);
-	vec2 totalDistortion = (texture(dudvtex, distortedTexCoords).rg*2.0 - 1.0)*0.02;
+//	vec2 distortedTexCoords = texture(dudvtex, vec2(fragTex.x + moveFactor, fragTex.y)).rg * 0.1;
+//	distortedTexCoords = -fragTex + vec2(distortedTexCoords.x,distortedTexCoords.y+moveFactor);
+//	vec2 totalDistortion = (texture(dudvtex, distortedTexCoords).rg*2.0 - 1.0)*0.02;
+	vec2 distortedTexCoords = (texture(dudvtex, vec2(fragTex.x+moveFactor, fragTex.y)).rg * 2.0 - 1.0) * 0.02 ;
+	vec2 distortedTexCoords2 = (texture(dudvtex, vec2(-fragTex.x+moveFactor, fragTex.y+moveFactor)).rg * 2.0 - 1.0) * 0.02;
+	vec2 totalDistortion = distortedTexCoords + distortedTexCoords2;
 	vec4 normalMapColor = texture(normtex, distortedTexCoords);
 	vec4 normal = vec4(normalMapColor.r*2.0 - 1.0, normalMapColor.b,normalMapColor.g*2.0 - 1.0, 1.0);
 	normal = normalize(normal);
@@ -38,9 +41,8 @@ void main()
 	vec3 readynormal = normalize(TBN*texturenormal);
 	norm_out = vec4(readynormal, 1);
 
-	color = texture(coltex, distortedTexCoords);
-	color.rg += totalDistortion;
-	color = clamp(color, 0,1);
+	color = texture(coltex, totalDistortion);
+	color.xy = clamp(color.xy, 0,1);
 	//color = mix(color, vec4(0.0,0.3,0.5,1.0), 0.2);
 	pos_out = worldPos;
 	
