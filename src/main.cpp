@@ -68,7 +68,7 @@ public:
 	//texture for sim
 	GLuint wall_texture, wall_normal_texture, fire_texture, cloud_texture, cloud_normal_texture, water_texture, water_normal_texture, water_dudv_texture;
 	// textures for position, color, and normal
-	GLuint fb, fb2, fb3, fb4, depth_rb, FBOpos, FBOcol, FBOnorm, FBOcloudmask, FBOpos2, FBOcol2, FBOnorm2, FBOcloudmask2, FBOpos3, FBOcol3, FBOnorm3, FBOcloudmask3, FBOpos4, FBOcol4, FBOnorm4, FBOcloudmask4;
+	GLuint fb, fb2, fb3, fb4, depth_rb, FBOpos, FBOcol, FBOnorm, FBOcloudmask, FBOwatermask, FBOpos2, FBOcol2, FBOnorm2, FBOpos3, FBOcol3, FBOnorm3, FBOpos4, FBOcol4, FBOnorm4;
 
 	// Contains vertex information for OpenGL
 	GLuint VertexArrayID, VertexArrayID2;
@@ -86,8 +86,8 @@ public:
 	GLuint ssbo_GPU_id;
 
 	glm::vec3 mouse_pos;
-	/*glm::vec2 fire_to = glm::vec2(0);
-	glm::vec2 fire_to2 = glm::vec2(0);*/
+	glm::vec2 fire_to = glm::vec2(0);
+	glm::vec2 fire_to2 = glm::vec2(0);
 	glm::vec2 cloud_offsets[NUM_CLOUDS];
 	glm::vec2 positions[NUM_CLOUDS];
 	double time = 0.0;
@@ -215,7 +215,7 @@ public:
 		prog_water->addAttribute("vertTex");
 
 		// Initialize the GLSL program.
-		prog_mouse = make_shared<Program>();
+		/*prog_mouse = make_shared<Program>();
 		prog_mouse->setVerbose(false);
 		prog_mouse->setShaderNames(resourceDirectory + "/mouse_vert.glsl", resourceDirectory + "/mouse_frag.glsl");
 
@@ -229,7 +229,7 @@ public:
 		prog_mouse->addUniform("M");
 		prog_mouse->addAttribute("vertPos");
 		prog_mouse->addAttribute("vertNor");
-		prog_mouse->addAttribute("vertTex");
+		prog_mouse->addAttribute("vertTex");*/
 
 		// Initialize the GLSL program.
 		prog_deferred = make_shared<Program>();
@@ -271,7 +271,7 @@ public:
 
 
 		// Initialize the GLSL program.
-		/*prog_fire = make_shared<Program>();
+		prog_fire = make_shared<Program>();
 		prog_fire->setVerbose(false);
 		prog_fire->setShaderNames(resourceDirectory + "/fire.vert", resourceDirectory + "/fire.frag");
 
@@ -288,7 +288,7 @@ public:
 		prog_fire->addUniform("t");
 		prog_fire->addAttribute("vertPos");
 		prog_fire->addAttribute("vertNor");
-		prog_fire->addAttribute("vertTex")*/;
+		prog_fire->addAttribute("vertTex");
 
 		// Initialize the GLSL program.
 		prog_cloud = make_shared<Program>();
@@ -539,17 +539,6 @@ public:
 		glUniform1i(Tex1Location, 0);
 		glUniform1i(Tex2Location, 1);
 
-		str = resourceDirectory + "/water_texture.jpg";
-		data = stbi_load(str.c_str(), &width, &height, &channels, 4);
-		glGenTextures(1, &water_texture);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, water_texture);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
 
 		str = resourceDirectory + "/water_dudv_texture.jpg";
 		data = stbi_load(str.c_str(), &width, &height, &channels, 4);
@@ -571,6 +560,18 @@ public:
 		glBindTexture(GL_TEXTURE_2D, water_normal_texture);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		str = resourceDirectory + "/water_texture.jpg";
+		data = stbi_load(str.c_str(), &width, &height, &channels, 4);
+		glGenTextures(1, &water_texture);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, water_texture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
@@ -637,12 +638,24 @@ public:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+
+		// Generate Mask Texture
+		glGenTextures(1, &FBOwatermask);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, FBOwatermask);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
 		
 		//Attach 2D texture to this FBO
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, FBOcol, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, FBOpos, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, FBOnorm, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, FBOcloudmask, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, FBOwatermask, 0);
+
 		//-------------------------
 		glGenRenderbuffers(1, &depth_rb);
 		glBindRenderbuffer(GL_RENDERBUFFER, depth_rb);
@@ -713,11 +726,14 @@ public:
 		Tex3Loc = glGetUniformLocation(prog_raytrace->pid, "norm_tex");
 		Tex4Loc = glGetUniformLocation(prog_raytrace->pid, "cloud_mask_tex");
 		int Tex5Loc = glGetUniformLocation(prog_raytrace->pid, "no_shadow_col_tex");
+		int Tex6Loc = glGetUniformLocation(prog_raytrace->pid, "water_mask_tex");
 		glUniform1i(Tex1Loc, 0);
 		glUniform1i(Tex2Loc, 1);
 		glUniform1i(Tex3Loc, 2);
 		glUniform1i(Tex4Loc, 3);
 		glUniform1i(Tex5Loc, 4);
+		glUniform1i(Tex6Loc, 5);
+
 
 
 		glUseProgram(prog_raytrace->pid);
@@ -762,16 +778,19 @@ public:
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, FBOpos3, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, FBOnorm3, 0);
 
+
 		Tex1Loc = glGetUniformLocation(prog_raytrace->pid, "col_tex");
 		Tex2Loc = glGetUniformLocation(prog_raytrace->pid, "pos_tex");
 		Tex3Loc = glGetUniformLocation(prog_raytrace->pid, "norm_tex");
 		Tex4Loc = glGetUniformLocation(prog_raytrace->pid, "cloud_mask_tex");
 		Tex5Loc = glGetUniformLocation(prog_raytrace->pid, "no_shadow_col_tex");
+		Tex6Loc = glGetUniformLocation(prog_raytrace->pid, "water_mask_tex");
 		glUniform1i(Tex1Loc, 0);
 		glUniform1i(Tex2Loc, 1);
 		glUniform1i(Tex3Loc, 2);
 		glUniform1i(Tex4Loc, 3);
 		glUniform1i(Tex5Loc, 4);
+		glUniform1i(Tex6Loc, 5);
 		
 		glUseProgram(prog_raytrace->pid);
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
@@ -819,11 +838,13 @@ public:
 		Tex3Loc = glGetUniformLocation(prog_raytrace->pid, "norm_tex");
 		Tex4Loc = glGetUniformLocation(prog_raytrace->pid, "cloud_mask_tex");
 		Tex5Loc = glGetUniformLocation(prog_raytrace->pid, "no_shadow_col_tex");
+		Tex6Loc = glGetUniformLocation(prog_raytrace->pid, "water_mask_tex");
 		glUniform1i(Tex1Loc, 0);
 		glUniform1i(Tex2Loc, 1);
 		glUniform1i(Tex3Loc, 2);
 		glUniform1i(Tex4Loc, 3);
 		glUniform1i(Tex5Loc, 4);
+		glUniform1i(Tex6Loc, 5);
 
 		GLenum status;
 		status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -914,8 +935,8 @@ public:
 		glfwGetCursorPos(windowManager->windowHandle, &mouse_posX, &mouse_posY);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, fb);
-		GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
-		glDrawBuffers(4, buffers);
+		GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4 };
+		glDrawBuffers(5, buffers);
 
 		glClearColor(0.0, 0.0, 0.0, 0.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1061,6 +1082,8 @@ public:
 		glGenerateMipmap(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, FBOcloudmask);
 		glGenerateMipmap(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, FBOwatermask);
+		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 
 	void render_deferred()
@@ -1100,6 +1123,8 @@ public:
 		glBindTexture(GL_TEXTURE_2D, FBOnorm);
 		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_2D, FBOcloudmask);
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, FBOwatermask);
 		glBindVertexArray(VertexArrayIDBox);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		
@@ -1107,6 +1132,23 @@ public:
 
 		if (pass_number ==2) {
 			
+			double frametime = get_last_elapsed_time();
+			glm::mat4 M, S, T, R;
+			// Draw cursor
+			prog_fire->bind();
+			T = glm::translate(glm::mat4(1), mouse_pos);
+			S = glm::scale(glm::mat4(1), glm::vec3(0.025 * 2, 0.05 * 2, 0.05));
+			R = glm::rotate(glm::mat4(1), glm::radians(180.f), glm::vec3(0, 0, 1));
+			M = T * S * R;
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, fire_texture);
+			update_fire_tex(frametime);
+			glUniform1f(prog_fire->getUniform("t"), t);
+			glUniform2fv(prog_fire->getUniform("to"), 1, &fire_to.x);
+			glUniform2fv(prog_fire->getUniform("to2"), 1, &fire_to2.x);
+			glUniformMatrix4fv(prog_fire->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+			mouse->draw(prog_fire);
+			prog_fire->unbind();
 
 			// Save output to framebuffer
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -1119,35 +1161,35 @@ public:
 		}
 	}
 
-	//void update_fire_tex(double frameTime)
-	//{
-	//	time += frameTime;
+	void update_fire_tex(double frameTime)
+	{
+		time += frameTime;
 
-	//	if (time > 1.f / (float)FPS) {
-	//		// Time to update new frame
-	//		time -= 1.f / (float)FPS;
-	//		fire_to = fire_to2;
-	//		t = time / (float)FPS;
+		if (time > 1.f / (float)FPS) {
+			// Time to update new frame
+			time -= 1.f / (float)FPS;
+			fire_to = fire_to2;
+			t = time / (float)FPS;
 
-	//		if (fire_to2.x >= (7.f / 8.f)) {
-	//			if (fire_to2.y >= (7.f / 8.f)) {
-	//				fire_to2.x = 0.f;
-	//				fire_to2.y = 0.f;
-	//			}
-	//			else {
-	//				fire_to2.x = 0.f;
-	//				fire_to2.y += (1.f / 8.f);
-	//			}
-	//		}
-	//		else {
-	//			fire_to2.x += (1.f / 8.f);
-	//		}
-	//	}
-	//	else {
-	//		// Same frame just change t
-	//		t = (float)time / (float)FPS;
-	//	}
-	//}
+			if (fire_to2.x >= (7.f / 8.f)) {
+				if (fire_to2.y >= (7.f / 8.f)) {
+					fire_to2.x = 0.f;
+					fire_to2.y = 0.f;
+				}
+				else {
+					fire_to2.x = 0.f;
+					fire_to2.y += (1.f / 8.f);
+				}
+			}
+			else {
+				fire_to2.x += (1.f / 8.f);
+			}
+		}
+		else {
+			// Same frame just change t
+			t = (float)time / (float)FPS;
+		}
+	}
 
 	void render_raytrace_geometry()
 		{
@@ -1179,6 +1221,8 @@ public:
 		glBindTexture(GL_TEXTURE_2D, FBOcloudmask);
 		glActiveTexture(GL_TEXTURE4);
 		glBindTexture(GL_TEXTURE_2D, FBOcol);
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, FBOwatermask);
 		glBindVertexArray(VertexArrayIDBox);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		prog_raytrace->unbind();
@@ -1222,6 +1266,8 @@ public:
 		glBindTexture(GL_TEXTURE_2D, FBOcloudmask);
 		glActiveTexture(GL_TEXTURE4);
 		glBindTexture(GL_TEXTURE_2D, FBOcol);
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, FBOwatermask);
 		glBindVertexArray(VertexArrayIDBox);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		prog_raytrace->unbind();
@@ -1263,28 +1309,30 @@ public:
 		glBindTexture(GL_TEXTURE_2D, FBOcloudmask);
 		glActiveTexture(GL_TEXTURE4);
 		glBindTexture(GL_TEXTURE_2D, FBOcol);
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, FBOwatermask);
 		glBindVertexArray(VertexArrayIDBox);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		prog_raytrace->unbind();
 		// Save output to framebuffer
 		
 		//double frametime = get_last_elapsed_time();
-		glm::mat4 M, S, T, R;
-		// Draw cursor
-		prog_mouse->bind();
-		T = glm::translate(glm::mat4(1), mouse_pos);
-		S = glm::scale(glm::mat4(1), glm::vec3(0.025 * 2, 0.05 * 2, 0.05));
-		R = glm::rotate(glm::mat4(1), glm::radians(180.f), glm::vec3(0, 0, 1));
-		M = T * S * R;
-	/*	glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, fire_texture);*/
+		//glm::mat4 M, S, T, R;
+		//// Draw cursor
+		//prog_fire->bind();
+		//T = glm::translate(glm::mat4(1), mouse_pos);
+		//S = glm::scale(glm::mat4(1), glm::vec3(0.025 * 2, 0.05 * 2, 0.05));
+		//R = glm::rotate(glm::mat4(1), glm::radians(180.f), glm::vec3(0, 0, 1));
+		//M = T * S * R;
+		//glActiveTexture(GL_TEXTURE0);
+		//glBindTexture(GL_TEXTURE_2D, fire_texture);
 		//update_fire_tex(frametime);
 		//glUniform1f(prog_fire->getUniform("t"), t);
 		//glUniform2fv(prog_fire->getUniform("to"), 1, &fire_to.x);
 		//glUniform2fv(prog_fire->getUniform("to2"), 1, &fire_to2.x);
-		glUniformMatrix4fv(prog_mouse->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		mouse->draw(prog_mouse);
-		prog_mouse->unbind();
+		//glUniformMatrix4fv(prog_fire->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		//mouse->draw(prog_fire);
+		//prog_fire->unbind();
 
 	}
 };

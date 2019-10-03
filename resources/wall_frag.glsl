@@ -4,6 +4,8 @@ layout(location = 0) out vec4 color;
 layout(location = 1) out vec4 pos_out;
 layout(location = 2) out vec4 norm_out;
 layout(location = 3) out vec4 cloud_mask_out;
+layout(location = 4) out vec4 water_mask_out;
+
 
 in vec3 fragPos;
 in vec2 fragTex;
@@ -29,6 +31,8 @@ void main()
 	pos_out = worldPos;
 	norm_out = vec4(readynormal, 1);
 	norm_out = vec4(normalize(fragNor), 1);
+	water_mask_out = vec4(color.rgb, 0);
+
 	
 	color = texturecolor;
 	if(color.a==0)

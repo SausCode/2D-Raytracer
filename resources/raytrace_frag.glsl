@@ -11,6 +11,8 @@ layout(location = 1) uniform sampler2D pos_tex;
 layout(location = 2) uniform sampler2D norm_tex;
 layout(location = 3) uniform sampler2D cloud_mask_tex;
 layout(location = 4) uniform sampler2D no_shadow_col_tex;
+layout(location = 5) uniform sampler2D water_mask_tex;
+
 
 uniform int passRender;
 uniform vec3 mouse_pos;
@@ -26,31 +28,33 @@ vec2 voxel_transform(vec2 pos)
 	return texpos;
 }
 
-vec4 sampling(vec2 conedirection, vec2 texposition, float mipmap, vec2 pixposition, float is_in_cloud)
+vec4 sampling(vec2 conedirection, vec2 texposition, float mipmap, vec2 pixposition, float is_in_cloud, float is_in_water)
 {
 	uint imip = uint(mipmap);
 	float linint = mipmap - float(imip);
 	vec4 colA = texture(col_tex, texposition.xy, imip);
 	vec4 colB = texture(col_tex, texposition.xy, imip + 1);
 	float d = 1.0;
-	/*if(is_in_cloud==0)
-	{
-		vec2 norm = -texture(norm_tex, texposition.xy, 1).xy;
-		d = dot(normalize(norm), normalize(conedirection));
-		d = clamp(d, 0, 1);
-	}*/
+	vec2 norm = -texture(norm_tex, texposition.xy, 1).xy;
+	d = dot(normalize(norm), normalize(conedirection));
+
+	d = clamp(d, 0, 1);
+	float f = clamp(mipmap/10.0, 0, 1);
+	d = mix(d, 1, f);
 		
 	vec4 col = mix(colA, colB, linint)*d;
 	return col;
 }
 
-traceInfo cone_tracing(vec2 conedirection, vec2 pixelpos, float angle,int stepcount, float is_in_cloud, int passNum)
+traceInfo cone_tracing(vec2 conedirection, vec2 pixelpos, float angle,int stepcount, float is_in_cloud, float is_in_water, int passNum)
 {
 	traceInfo t;
 	conedirection = normalize(conedirection);
 	float voxelSize = 1. / 1080.;
 	vec4 trace = vec4(0);
 	float distanceFromConeOrigin = voxelSize * 2;
+	if(is_in_water>0.0)
+		distanceFromConeOrigin = voxelSize*5;
 	float coneHalfAngle = angle;
 	vec2 texpos;
 	vec2 pixelposition;
@@ -60,15 +64,16 @@ traceInfo cone_tracing(vec2 conedirection, vec2 pixelpos, float angle,int stepco
 		float mip = log2(coneDiameter / voxelSize)*0.8 -1;
 		pixelposition = pixelpos + conedirection * distanceFromConeOrigin;
 		texpos = voxel_transform(pixelposition);
-		trace += sampling(conedirection, texpos, mip, pixelposition, is_in_cloud)*5;
+		trace += sampling(conedirection, texpos, mip, pixelposition, is_in_cloud, is_in_water)*5;
 		distanceFromConeOrigin += coneDiameter;
 
-		/*if (trace.a > 5.95)
-			break;*/
-		/*
-		if(	((trace.a>0.25 && is_in_cloud==0) || 
-			(trace.a>0.5 && is_in_cloud > 0)) &&
-			(passNum!=3))	{ break; }*/
+//		 if (trace.a > 5.95)
+//			break;
+//			
+//		 if(((trace.a>0.25 && is_in_cloud==0) || 
+//			(trace.a>0.5 && is_in_cloud > 0)) &&
+//			(passNum!=3))	{ break; }
+			
 	}
 	t.color = trace.rgb;
 	return t;
@@ -93,10 +98,12 @@ void main()
 	vec3 normals = texture(norm_tex, fragTex).rgb;
 	vec3 world_pos = texture(pos_tex, fragTex).rgb;
 	vec4 is_in_cloud = texture(cloud_mask_tex, fragTex);
+	vec4 is_in_water = texture(water_mask_tex, fragTex);
+
 	vec3 no_shadow_texture_color = texture(no_shadow_col_tex, fragTex).rgb;
 
-	//color = vec4(texturecolor,1);	
-	color = vec4(no_shadow_texture_color,1);	
+	color = vec4(texturecolor,1);	
+	//color = vec4(no_shadow_texture_color,1);	
 	//color = vec4(normals,1);
 
 	vec2 lightdirection = normalize(mouse_pos.xy - world_pos.xy);
@@ -109,13 +116,20 @@ void main()
 			traceInfo t;
 			if (is_in_cloud.a == 0.0)
 			{
-				coneHalfAngle = 0.7; 
-				t = cone_tracing(normals.xy, world_pos.xy, coneHalfAngle, 7, is_in_cloud.a, passRender);
+
+				coneHalfAngle = 0.7;
+				int stepcount = 7;
+				if(is_in_water.a>0.0)
+				{
+					coneHalfAngle = 0.09; //5 degree cone 
+					stepcount = 20;
+				}
+				t = cone_tracing(normals.xy, world_pos.xy, coneHalfAngle, stepcount, is_in_cloud.a, is_in_water.a, passRender);
 				t.color *= no_shadow_texture_color.xyz;
 			}
 			else
 			{
-				t = cone_tracing(lightdirection, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
+				t = cone_tracing(lightdirection, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, is_in_water.a, passRender);
 				t.color *= is_in_cloud.xyz;
 			}
 			color.rgb += t.color;
@@ -126,13 +140,13 @@ void main()
 			mat4 Rz = rotationMatrix(vec3(0, 0, 1), 3.1415926 / 2.);
 			traceInfo t1,t2,t3,t4;
 			vec4 conedirection = vec4(lightdirection,0,1);
-			t1 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
+			t1 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, is_in_water.a, passRender);
 			conedirection = Rz * conedirection;
-			t2 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
+			t2 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a,is_in_water.a,  passRender);
 			conedirection = Rz * conedirection;
-			t3 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
+			t3 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, is_in_water.a, passRender);
 			conedirection = Rz * conedirection;
-			t4 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
+			t4 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, is_in_water.a, passRender);
 			vec3 colorsum = t1.color + t2.color + t3.color + t4.color;
 			colorsum *= is_in_cloud.xyz;
 			color.rgb += colorsum;
@@ -141,19 +155,22 @@ void main()
 
 		if(passRender==4 && is_in_cloud.a==0.0 && (voxeltoggle<=4 && voxeltoggle>2))
 		{
+			coneHalfAngle = 0.7; 
+			if(is_in_water.a>0.0)
+				coneHalfAngle = 0.1; 			
 			if(voxeltoggle==4)
 				is_in_cloud.a = 1;
 			mat4 Rz = rotationMatrix(vec3(0, 0, 1), 3.1415926/2);
 			traceInfo t1,t2,t3,t4;
 			vec4 conedirection = vec4(normals.xy,0,1);
-			t1 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
+			t1 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, is_in_water.a, passRender);
 			conedirection = Rz * conedirection;
-			t2 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
+			t2 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, is_in_water.a, passRender);
 			Rz = rotationMatrix(vec3(0, 0, -1), 3.1415926 / 2.);
 			conedirection = Rz * conedirection;
-			t3 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
+			t3 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, is_in_water.a, passRender);
 			conedirection = Rz * conedirection;
-			t4 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, passRender);
+			t4 = cone_tracing(conedirection.xy, world_pos.xy, coneHalfAngle, 15, is_in_cloud.a, is_in_water.a, passRender);
 			vec3 colorsum = t1.color + t2.color + t3.color + t4.color;
 			color.rgb += colorsum;
 		}
@@ -163,6 +180,7 @@ void main()
 		color.rgb = texturecolor;
 	}
 	//color.rgb = texturecolor;
+	
 	norm_out = vec4(normals, 1);
 	pos_out = vec4(world_pos, 1);
 }

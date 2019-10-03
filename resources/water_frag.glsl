@@ -3,7 +3,8 @@
 layout(location = 0) out vec4 color;
 layout(location = 1) out vec4 pos_out;
 layout(location = 2) out vec4 norm_out;
-layout(location = 3) out vec4 mask_out;
+layout(location = 3) out vec4 cloud_mask_out;
+layout(location = 4) out vec4 water_mask_out;
 
 in vec3 fragPos;
 in vec2 fragTex;
@@ -43,10 +44,10 @@ void main()
 
 	color = texture(coltex, totalDistortion);
 	color.xy = clamp(color.xy, 0,1);
-	//color = mix(color, vec4(0.0,0.3,0.5,1.0), 0.2);
+//	color = vec4(0.0,0.3,0.5,1.0);
 	pos_out = worldPos;
 	
 
-	mask_out = vec4(color.rgb, 1);
-
+	cloud_mask_out = vec4(color.rgb, 0);
+	water_mask_out = vec4(color.rgb, 1);
 }

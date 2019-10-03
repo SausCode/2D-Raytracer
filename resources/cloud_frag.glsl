@@ -4,6 +4,8 @@ layout(location = 0) out vec4 color;
 layout(location = 1) out vec4 pos_out;
 layout(location = 2) out vec4 norm_out;
 layout(location = 3) out vec4 cloud_mask_out;
+layout(location = 4) out vec4 water_mask_out;
+
 
 in vec3 fragPos;
 in vec2 fragTex;
@@ -32,6 +34,7 @@ layout(location = 1) uniform sampler2D tex2;
 	color = texturecolor;
 
 
+	water_mask_out = vec4(color.rgb, 0);
 
 	norm_out = vec4(readynormal, color.a);
 }
